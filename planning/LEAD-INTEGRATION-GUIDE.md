@@ -152,7 +152,7 @@ Also diff the `package.json` files to catch any unlisted additions:
 ```bash
 # See what the module installed beyond the template defaults
 diff <(jq '.dependencies | keys[]' [module]/package.json | sort) \
-     <(echo '"react"\n"react-dom"\n"react-router-dom"\n"@material-ui/core"\n"@material-ui/icons"\n"@material-ui/lab"\n"@material-ui/pickers"\n"@date-io/date-fns"\n"date-fns"\n"styled-components"\n"@tanstack/react-query"\n"@tanstack/react-table"\n"@tanstack/react-form"\n"axios"\n"lodash"\n"clsx"\n"color-hash"\n"concurrently"' | sort)
+     <(echo '"@date-io/date-fns"\n"@material-ui/core"\n"@material-ui/icons"\n"@material-ui/lab"\n"@material-ui/pickers"\n"@tanstack/react-form"\n"@tanstack/react-query"\n"@tanstack/react-table"\n"@wojtekmaj/react-daterange-picker"\n"axios"\n"clsx"\n"color-hash"\n"date-fns"\n"lodash"\n"react"\n"react-dom"\n"react-router-dom"\n"styled-components"' | sort)
 ```
 
 Any additional packages need to be installed in the main app.
