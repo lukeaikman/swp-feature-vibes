@@ -14,10 +14,10 @@ The module was developed against:
 
 | Part | Effort | Notes |
 |---|---|---|
-| Frontend (Steps 1-8) | 1-2 days | Mostly mechanical: copy, rewrite imports, add routes/sidebar/permissions |
-| Backend (Step 9) | 3-5 days | Depends on entity count and complexity of business logic |
-| i18n (Step 7) | 0.5 day | Find-and-wrap strings |
-| Review & smoke test (Steps 10-12) | 0.5-1 day | |
+| Frontend (Steps 1-8, 10) | 1-2 days | Mostly mechanical: copy, rewrite imports, add routes/sidebar/permissions |
+| i18n (Step 9) | 0.5 day | Find-and-wrap strings |
+| Backend (Step 11) | 3-5 days | Depends on entity count and complexity of business logic |
+| Review & smoke test (Steps 12-14) | 0.5-1 day | |
 | **Total** | **~5-8 days** | For a typical 4-entity module |
 
 ---

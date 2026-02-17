@@ -38,6 +38,8 @@ cd ..
 
 > **Important:** Check out whichever branch is your stable mainline (`develop`, `main`, etc.). If this repo is on a random feature branch where someone has renamed or restructured components, the template will break with confusing import errors.
 
+> **Do NOT run `npm install` inside `safeworkplace-web-app/`.** The template only reads source files from `src/UI/`, not compiled code. If the web app has `node_modules/` installed, Vite may resolve packages (React, MUI, styled-components) from there instead of from the template's own `node_modules/`, causing "Invalid hook call" errors and broken themes. If `node_modules/` already exists from other work, either delete it or ignore the `setup.sh` warning — the `resolve.dedupe` in `vite.config.ts` provides a safety net, but a clean checkout is simplest.
+
 > **If your module development spans more than a month**, run `git pull` inside `safeworkplace-web-app/` periodically to stay current with any UI component changes.
 
 ### 3. Clone the API repo (optional — reference only)
@@ -138,7 +140,9 @@ cp db.seed.json db.json
 
 ## Components you should NOT use
 
-Most of the 55+ UI components work out of the box. A handful have deeper dependencies that aren't shimmed. **Avoid these:**
+Most of the 55+ UI components work out of the box. A handful have deeper dependencies that aren't shimmed or aren't installed. **Avoid these:**
+
+### Unshimmed dependencies (will fail to resolve)
 
 | Component | Why | Alternative |
 |---|---|---|
@@ -149,7 +153,16 @@ Most of the 55+ UI components work out of the box. A handful have deeper depende
 | `InfoBlockCollapsible` | Imports from `@entities/report` | Use `ContentBox` instead |
 | `AnonymousBadge` | Imports from `@report-configs` | Report-specific; unlikely to be needed |
 
-Everything else — `Table`, `PageContainer`, `PageHeader`, `Input`, `Select`, `Modal`, `Badge`, `Avatar`, `FilesInput`, `DatePicker`, `Autocomplete`, `Button`, `Loader`, `SearchInput`, `TabSwitch`, `ContentBox`, `Breadcrumbs`, `Checkbox`, `Switch`, `RadioInput`, `ParticipantsList`, etc. — works fine.
+### Missing third-party dependencies (install if you need them)
+
+These components work fine but depend on packages not included in the template's `package.json`. Install the dependency yourself if you need the component, and document it in `COMPONENT-LOG.md`.
+
+| Component | Missing dependency | Install command |
+|---|---|---|
+| `PieChart` | `recharts` | `npm install recharts` |
+| `MarkdownParser` | `react-markdown`, `remark-gfm`, `rehype-raw` | `npm install react-markdown remark-gfm rehype-raw` |
+
+Everything else — `Table`, `PageContainer`, `PageHeader`, `Input`, `Select`, `Modal`, `Badge`, `Avatar`, `FilesInput`, `DatePicker`, `Autocomplete`, `Button`, `Loader`, `SearchInput`, `TabSwitch`, `ContentBox`, `Breadcrumbs`, `Checkbox`, `Switch`, `RadioInput`, `ParticipantsList`, etc. — works fine out of the box.
 
 ---
 
@@ -213,6 +226,18 @@ json-server writes back to `db.json` on every POST/PUT/DELETE. Reset it:
 cp db.seed.json db.json
 ```
 
+### "Cannot find module '...'" in a @UI component you didn't touch
+
+If Vite suddenly can't resolve an import inside a `@UI` component, someone upstream added a new dependency to that component (e.g., imported from `@entities/something-new` or a new npm package). Fix: check the failing import in the component source, then either add a shim for it or install the missing package. Document what you did in `CHANGELOG.md`.
+
+### json-server commands don't work / "Unknown option --routes"
+
+The template requires `json-server` **v0.x** (specifically `^0.17.x`). Version 1.x completely rewrote the CLI — `--routes` doesn't exist, pagination syntax changed, etc. If you accidentally installed v1, downgrade: `npm install json-server@0.17.4`.
+
 ### The app looks wrong / styles are broken
 
 The template uses hardcoded SWP theme values. If the main app's theme has changed significantly since the template was last updated, the colours or spacing may differ slightly. This is cosmetic only — it won't affect integration.
+
+### "Invalid hook call" / hooks errors after cloning
+
+This usually means two copies of React are in the bundle. Check if `safeworkplace-web-app/node_modules/` exists and delete it (see the warning in step 2 of setup). The template's `vite.config.ts` has `resolve.dedupe` as a safety net, but removing the duplicate `node_modules/` is the cleanest fix.

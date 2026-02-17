@@ -71,9 +71,16 @@ These are the real production components from `safeworkplace-web-app/src/UI/`, a
 
 | Component | What It Does |
 |---|---|
-| `PieChart` | Recharts-based pie chart wrapper. |
-| `MarkdownParser` | Renders markdown content as HTML. |
 | `MultiplePicker` | Multiple checkbox selection group. |
+
+### Require extra dependency installation
+
+These components work but need packages installed that aren't in the template's `package.json`. Install the dependency, then document it in `COMPONENT-LOG.md` under "New Dependencies Added."
+
+| Component | What It Does | Install |
+|---|---|---|
+| `PieChart` | Recharts-based pie chart wrapper. | `npm install recharts` |
+| `MarkdownParser` | Renders markdown content as HTML. | `npm install react-markdown remark-gfm rehype-raw` |
 
 **To see the full props interface for any component**, open its `.tsx` file in `safeworkplace-web-app/src/UI/[Component]/[Component].tsx`.
 
@@ -476,8 +483,14 @@ import { useTheme } from '@material-ui/core/styles'
 
 const theme = useTheme()
 theme.palette.primary.main  // '#11233b'
-theme.palette.brand         // '#FF9900'
+theme.palette.brand.main    // '#FF9900'
 ```
+
+### Utility Functions
+
+The `@app/format` shim **only exports `getFullName`** — the only function from the main app's `format.ts` that UI components import. Other utilities available in the main app (such as `formatDate`, `formatCurrency`, etc.) are **not available** in this isolated environment.
+
+If you need date formatting, use `date-fns` directly (add it to your `package.json`). For other formatting needs, create local utility functions in `src/entities/[module]/helpers.ts` and document them in `COMPONENT-LOG.md` so the integration lead knows what to replace with main app equivalents.
 
 ---
 
@@ -490,6 +503,7 @@ Define all route paths in `src/app/routes.ts`:
 ```typescript
 // src/app/routes.ts
 export const ROUTES = {
+  HOME: '/',          // REQUIRED — @UI/Breadcrumbs imports ROUTES.HOME
   DASHBOARD: '/',
   TEMPLATES: '/templates',
   CREATE_TEMPLATE: '/templates/create',

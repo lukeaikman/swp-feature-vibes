@@ -45,10 +45,13 @@ The real UI components import from `@app/theme`, which internally calls `useGetC
 - `@app/theme` → local shim that exports hardcoded MUI theme + types + helpers
 - `@lingui/macro` → local shim where `t` is a passthrough (returns the string as-is)
 - `next/link` → local shim that renders React Router `<Link>`
+- `next/head` → local shim that renders `null` (page titles don't matter in dev)
 - `@app/routes` → local file with our module's routes
 - `@app/format` → local copy of the one helper function used (`getFullName`)
 - `@entities/user` → local file with `IUser` type + `IUserPicture` type
 - `@entities/translation` → local file with the `SAFE_WORKPLACE` constant
+
+Additionally, `src/types/mui.d.ts` provides the MUI module augmentation that declares custom palette keys (`brand`, `gray`, etc.) and custom theme root properties (`drawerWidth`, `headerHeight`, `welcome`). Without this, TypeScript will report errors on every UI component that accesses these custom properties.
 
 This **eliminates Recoil and Lingui entirely** from the dependency tree. The dev doesn't need to know they exist.
 
@@ -107,15 +110,17 @@ swp-module-template/
 │   │
 │   ├── shims/
 │   │   ├── theme/
-│   │   │   ├── index.ts               # Exports: ThemeColors, StyleProps, isDark, useThemeMode
+│   │   │   ├── index.ts               # Re-exports ThemeProvider, helpers, useThemeMode
 │   │   │   ├── ThemeProvider.tsx       # MUI ThemeProvider with hardcoded SWP colors
-│   │   │   └── helpers.ts             # isDark(), getScrollBarStyles(), etc.
+│   │   │   └── helpers.ts             # ThemeColors, StyleProps, isDark(), getScrollBarStyles()
 │   │   ├── lingui.ts                  # t`string` passthrough, Trans passthrough
 │   │   ├── next-link.tsx              # Renders React Router <Link>
+│   │   ├── next-head.tsx              # No-op (renders null)
 │   │   ├── format.ts                  # getFullName() helper
 │   │   └── translation.ts             # SAFE_WORKPLACE constant
 │   │
 │   ├── types/
+│   │   ├── mui.d.ts                   # MUI module augmentation (custom palette + theme keys)
 │   │   ├── user.ts                    # IUser, IUserPicture (based on main app)
 │   │   ├── client.ts                  # IClient (based on main app, for reference)
 │   │   ├── common.ts                  # PaginatedResponse<T>, IApiFile, etc.
@@ -203,9 +208,21 @@ export default defineConfig({
       '@lingui/macro': path.resolve(__dirname, 'src/shims/lingui'),
       '@lingui/react': path.resolve(__dirname, 'src/shims/lingui'),
       'next/link': path.resolve(__dirname, 'src/shims/next-link'),
+      'next/head': path.resolve(__dirname, 'src/shims/next-head'),
       '@entities/user': path.resolve(__dirname, 'src/types/user'),
       '@entities/translation': path.resolve(__dirname, 'src/shims/translation'),
     },
+    // IMPORTANT: Prevents duplicate package resolution if safeworkplace-web-app
+    // has node_modules installed. Without this, Vite may resolve react, MUI, etc.
+    // from the web app's node_modules for aliased UI component files, causing
+    // "Invalid hook call" errors and broken theme/styled-components contexts.
+    dedupe: [
+      'react',
+      'react-dom',
+      '@material-ui/core',
+      '@material-ui/core/styles',
+      'styled-components',
+    ],
   },
   server: {
     port: 3000,
@@ -218,77 +235,231 @@ export default defineConfig({
 
 The `proxy` config means Axios calls to `/api/audit/templates` are forwarded to `json-server` on port 3001. This matches how the main app proxies through Next.js API routes — the path structure is identical.
 
+The `dedupe` config is a safety net: if the `safeworkplace-web-app` sibling directory has `node_modules/` installed (e.g., because the developer uses it for other work), Vite would otherwise resolve packages from there for aliased UI component files, creating two copies of React and causing "Invalid hook call" errors.
+
 ---
 
 ## Theme Shim (Hardcoded SWP Values)
 
-All values sourced from `safeworkplace-api/database/seed/client.js` and `safeworkplace-api/database/config/admin/client.json`:
+All values sourced from `safeworkplace-api/database/config/admin/client.json` and validated against `safeworkplace-web-app/src/app/theme/widgets/ThemeWrapper.tsx`.
+
+**Critical:** The theme structure must match production exactly. Custom palette entries (`brand`, `gray`, `neutral`, `button`, `buttonText`) must be **objects with `main`, `dark`, `light` properties** — not flat strings. Custom theme-level properties (`drawerWidth`, `headerHeight`, `welcome`) live at the **root** of the theme, not inside a `dimensions` object. UI components index into `theme.palette[color].main` dynamically, so flat strings will crash at runtime.
+
+### MUI Module Augmentation (Required)
+
+The production app declares custom palette and theme properties via TypeScript module augmentation inside `ThemeWrapper.tsx`. Since our shim replaces that file, we must provide our own augmentation in `src/types/mui.d.ts`:
+
+```typescript
+// src/types/mui.d.ts
+// MUI type augmentation — matches safeworkplace-web-app/src/app/theme/widgets/ThemeWrapper.tsx
+import { CSSProperties } from 'react'
+
+type WelcomeColors = {
+  background: CSSProperties['color']
+  border: CSSProperties['color']
+  brand: CSSProperties['color']
+  gradient: CSSProperties['color']
+  text: CSSProperties['color']
+  buttonText: CSSProperties['color']
+}
+
+declare module '@material-ui/core/styles/createTheme' {
+  interface Theme {
+    name: string
+    drawerWidth: number
+    drawerWidthCollapsed: number
+    headerHeight: number
+    welcome: WelcomeColors
+  }
+  interface ThemeOptions {
+    name: string
+    drawerWidth: number
+    drawerWidthCollapsed: number
+    headerHeight: number
+    welcome: WelcomeColors
+  }
+}
+
+declare module '@material-ui/core/styles/createPalette' {
+  interface Palette {
+    brand: Palette['primary']
+    gray: Palette['primary']
+    neutral: Palette['primary']
+    button: Palette['primary']
+    buttonText: Palette['primary']
+  }
+  interface PaletteOptions {
+    brand: PaletteOptions['primary']
+    gray: PaletteOptions['primary']
+    neutral: PaletteOptions['primary']
+    button: PaletteOptions['primary']
+    buttonText: PaletteOptions['primary']
+  }
+}
+```
+
+Without this file, the developer's IDE will show TypeScript errors on every `theme.palette.brand`, `theme.drawerWidth`, etc. across all UI components.
+
+### ThemeProvider Shim
 
 ```typescript
 // src/shims/theme/ThemeProvider.tsx
+// Hardcoded SWP theme — replaces production ThemeWrapper which uses useGetClient() + useThemeMode()
+// Values from: safeworkplace-api/database/config/admin/client.json
+// Structure from: safeworkplace-web-app/src/app/theme/widgets/ThemeWrapper.tsx lines 57-140
 import React from 'react'
-import { createMuiTheme, ThemeProvider as MuiThemeProvider } from '@material-ui/core/styles'
+import { createTheme, ThemeProvider, darken, lighten } from '@material-ui/core/styles'
 import CssBaseline from '@material-ui/core/CssBaseline'
 
-const theme = createMuiTheme({
+const theme = createTheme({
+  name: 'Safe Workplace',
+  drawerWidth: 280,
+  drawerWidthCollapsed: 80,
+  headerHeight: 240,
   palette: {
     type: 'light',
-    primary: { main: '#11233b' },
-    secondary: { main: '#FAFAFA' },
-    success: { main: '#4ECDC4' },
-    error: { main: '#C83636' },
-    info: { main: '#0066C0' },
-    warning: { main: '#FFB715' },
+    brand: {
+      main: '#FF9900',
+      dark: darken('#FF9900', 0.2),
+      light: lighten('#FF9900', 0.5),
+    },
+    primary: {
+      main: '#11233b',
+      light: lighten('#11233b', 0.05),
+    },
+    secondary: {
+      main: '#FAFAFA',
+    },
+    success: {
+      main: '#4ECDC4',
+    },
+    warning: {
+      main: '#FFB715',
+    },
+    error: {
+      main: '#C83636',
+    },
+    info: {
+      main: '#0066C0',
+    },
+    button: {
+      main: '#FF9900',
+      dark: darken('#FF9900', 0.25),
+      light: lighten('#FF9900', 0.25),
+    },
+    buttonText: {
+      main: '#11233b',
+    },
+    gray: {
+      main: '#A9A9A9',
+    },
+    neutral: {
+      main: '#E8E8E8',
+    },
+  },
+  welcome: {
     brand: '#FF9900',
-    gray: '#A9A9A9',
-    neutral: '#E8E8E8',
-    button: '#FF9900',
-    buttonText: '#232F3E',
-    white: '#FAFAFA',
-    welcome: {
-      brand: '#FF9900',
-      gradient: 'linear-gradient(180deg, #2b3745 33.6%, #232f3f 33.6%)',
-      background: '#11233b',
-      text: '#FAFAFA',
-      border: '#FFFFFF',
-      buttonText: '#232F3E',
+    gradient: 'linear-gradient(180deg, #2b3745 33.6%, #232f3f 33.6%)',
+    background: '#11233b',
+    text: '#FAFAFA',
+    border: '#FFFFFF',
+    buttonText: '#11233b',
+  },
+  shape: { borderRadius: 8 },
+  overrides: {
+    MuiButton: {
+      root: {
+        fontFamily: 'Poppins',
+        fontWeight: 500,
+        textTransform: 'none',
+      },
+    },
+    MuiTooltip: {
+      tooltip: {
+        fontSize: 12,
+      },
+    },
+    MuiAccordion: {
+      root: {
+        '&$expanded': {
+          marginTop: 0,
+        },
+      },
     },
   },
   typography: {
     fontFamily: "'DM Sans', sans-serif",
   },
-  dimensions: {
-    drawerWidth: 280,
-    drawerWidthCollapsed: 80,
-    headerHeight: 240,
-    borderRadius: 8,
-  },
 })
 
 export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <MuiThemeProvider theme={theme}>
+  <ThemeProvider theme={theme}>
     <CssBaseline />
     {children}
-  </MuiThemeProvider>
+  </ThemeProvider>
 )
 ```
+
+### Theme Index (Re-exports)
 
 ```typescript
 // src/shims/theme/index.ts
 export { ThemeWrapper } from './ThemeProvider'
+export { ThemeWrapper as ThemeProvider } from './ThemeProvider'
 export * from './helpers'
 
-// Types (copied from safeworkplace-web-app/src/app/theme/)
-export type ThemeColors = { color?: string; bgColor?: string }
-export type StyleProps = { theme: any }
+// Re-export useThemeMode (Recoil-based in production, hardcoded here)
+export const useThemeMode = () => ({
+  themeMode: 'light' as const,
+  setThemeMode: (() => {}) as (mode: 'light' | 'dark') => void,
+  isDarkMode: false,
+  toggleTheme: () => {},
+})
 ```
+
+### Theme Helpers
 
 ```typescript
 // src/shims/theme/helpers.ts
-export const isDark = () => false
-export const useThemeMode = () => 'light' as const
+// Matches: safeworkplace-web-app/src/app/theme/helpers.ts
+import { CSSProperties } from 'react'
+import { Theme } from '@material-ui/core/styles'
+
+export type ThemeColors =
+  | 'brand'
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'info'
+  | 'warning'
+  | 'error'
+  | 'button'
+  | 'buttonText'
+  | 'gray'
+
+export interface StyleProps {
+  className?: string
+  style?: CSSProperties
+}
+
 export const buttonInputHeight = 40
-export const getScrollBarStyles = () => ({})
+
+export const getScrollBarStyles = (theme: Theme) => ({
+  '&::-webkit-scrollbar': {
+    width: 8,
+    height: 8,
+  },
+  '&::-webkit-scrollbar-thumb': {
+    background: `${theme.palette.primary.main}90`,
+    borderRadius: 4,
+    cursor: 'pointer',
+  },
+  '&::-webkit-scrollbar-track': {
+    background: theme.palette.primary.main + 20,
+  },
+})
+
+export const isDark = (theme: Theme) => theme.palette.type === 'dark'
 ```
 
 ---
@@ -297,19 +468,30 @@ export const getScrollBarStyles = () => ({})
 
 ```typescript
 // src/shims/lingui.ts
+import type { ReactNode } from 'react'
 
 // Shim for @lingui/macro — makes t`string` return the string as-is
 export const t = (strings: TemplateStringsArray, ...values: any[]) =>
   String.raw(strings, ...values)
 
+// Shim for msg`` (message descriptors) — returns the string as-is
+export const msg = (strings: TemplateStringsArray, ...values: any[]) =>
+  String.raw(strings, ...values)
+
+// Shim for plural/select (rarely used in UI components)
+export const plural = (value: number, options: Record<string, string>) =>
+  options[value] ?? options.other ?? ''
+export const select = (value: string, options: Record<string, string>) =>
+  options[value] ?? options.other ?? ''
+
 // Shim for <Trans> — renders children directly
-export const Trans = ({ children }: { children?: React.ReactNode }) => children ?? null
+export const Trans = ({ children }: { children?: ReactNode }) => children ?? null
 
 // Shim for i18n object (some components may reference it)
 export const i18n = { _: (msg: string) => msg }
 
 // Shim for @lingui/react
-export const I18nProvider = ({ children }: { children: React.ReactNode }) => children
+export const I18nProvider = ({ children }: { children: ReactNode }) => children
 ```
 
 ---
@@ -332,6 +514,18 @@ const NextLink = React.forwardRef<HTMLAnchorElement, any>(
 
 NextLink.displayName = 'NextLink'
 export default NextLink
+```
+
+---
+
+## next/head Shim
+
+```typescript
+// src/shims/next-head.tsx
+// No-op — HeadTitle uses next/head to set page <title>, which doesn't matter in dev
+import type { ReactNode } from 'react'
+const Head = ({ children }: { children?: ReactNode }) => null
+export default Head
 ```
 
 ---
@@ -501,6 +695,15 @@ fi
 
 echo "✓ safeworkplace-web-app found"
 echo "✓ UI components will be referenced from ../safeworkplace-web-app/src/UI/"
+
+# Warn if the web app has node_modules — this can cause duplicate package resolution
+if [ -d "../safeworkplace-web-app/node_modules" ]; then
+  echo ""
+  echo "⚠️  WARNING: ../safeworkplace-web-app/node_modules/ exists."
+  echo "   This can cause duplicate React/MUI resolution and 'Invalid hook call' errors."
+  echo "   If you hit issues, delete that node_modules folder or avoid running npm install in the web app."
+fi
+
 echo ""
 echo "Run 'npm install && npm run dev' to start."
 ```
@@ -529,7 +732,7 @@ echo "Run 'npm install && npm run dev' to start."
     "lodash": "^4.17.21",
     "clsx": "^2.x",
     "color-hash": "^2.x",
-    "concurrently": "^8.x"
+    "@wojtekmaj/react-daterange-picker": "^6.x"
   },
   "devDependencies": {
     "vite": "^5.x",
@@ -540,7 +743,8 @@ echo "Run 'npm install && npm run dev' to start."
     "@types/lodash": "^4.x",
     "@types/styled-components": "^5.x",
     "@types/color-hash": "^2.x",
-    "json-server": "^0.17.x"
+    "json-server": "^0.17.x",
+    "concurrently": "^8.x"
   }
 }
 ```
