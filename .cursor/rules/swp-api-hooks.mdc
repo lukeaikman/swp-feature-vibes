@@ -1,0 +1,36 @@
+---
+description: API hook patterns, type conventions, mock data requirements, and API contract documentation
+globs: "src/entities/**/*.ts"
+alwaysApply: false
+---
+
+# API Hook Patterns
+
+All hooks go in `src/entities/[module]/api.ts`.
+
+## Hook Requirements
+
+- Always export query key constants: `export const TEMPLATES_QUERY = 'audit-templates'`
+- Always type the Axios response generic: `axios.get<IAuditTemplate[]>(...)`
+- Always invalidate relevant queries on mutation success
+- Type hooks against what json-server actually returns (flat arrays `Type[]`), but document the production paginated shape in `API-CONTRACT.md`
+
+## When Creating a Hook, ALWAYS Also:
+
+1. Add/update seed data in `db.json` (minimum 3-5 items per entity)
+2. Add path rewrite to `routes.json` if using nested paths (e.g., `/api/audit/templates` -> `/api/audit_templates`)
+3. Document the endpoint in `API-CONTRACT.md` with: method, path, auth, request/response body, field-by-field spec, server-side behaviour, error responses
+4. Update `db.seed.json`: `cp db.json db.seed.json`
+
+The hook count in `api.ts` must match the endpoint count in `API-CONTRACT.md`. If they don't, the contract is incomplete.
+
+## Type Conventions
+
+- All interfaces prefixed with `I` (e.g., `IAuditTemplate`)
+- Status values as union types: `type Status = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'`
+- Export everything with named exports — no `export default`
+- Define module types in `src/entities/[module]/types.ts`
+
+## Entity Barrel
+
+`src/entities/[module]/index.ts` must re-export all public types, hooks, helpers, and constants. Pages import from the barrel: `from '../../entities/[module]'`

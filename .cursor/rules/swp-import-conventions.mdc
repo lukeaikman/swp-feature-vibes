@@ -1,0 +1,39 @@
+---
+description: Import path conventions for entities and pages to ensure clean integration
+globs: "src/entities/**/*,src/pages/**/*"
+alwaysApply: false
+---
+
+# Import Conventions
+
+These patterns ensure find-and-replace works cleanly during integration into the main codebase.
+
+## Do
+
+- Import entity exports from the barrel: `from '../../entities/[module]'` (not individual files like `/api` or `/types`)
+- Keep page-internal imports relative: `./components/MyComponent`
+- Use exactly two levels of `../../` from pages to entities/types/routes — do not nest pages deeper
+
+## Do Not
+
+- NEVER import from `../../shims/` inside `entities/` or `pages/` — shims are only for `src/app/` and `src/App.tsx`
+- NEVER import from `../../app/shell/` inside `entities/` or `pages/`
+
+## Imports That Will Be Rewritten on Integration
+
+| In this module | Becomes in main app |
+|---|---|
+| `from '../../entities/[module]'` | `from '@entities/[module]'` |
+| `from '../../app/routes'` | `from '@app/routes'` |
+| `from '../../types/common'` | `from '@api/common'` |
+| `from '../../types/user'` | `from '@entities/user'` |
+
+Imports from `@UI`, `@material-ui/core`, `@tanstack/*`, and `./components/` stay the same.
+
+## Dependencies
+
+When installing a new npm package:
+1. Check if the main app already has it: search `safeworkplace-web-app/package.json`
+2. Document it immediately in `COMPONENT-LOG.md` under "New Dependencies Added"
+
+The `@app/format` shim only exports `getFullName`. For date formatting, use `date-fns` directly (already installed at v2.x — do not upgrade).

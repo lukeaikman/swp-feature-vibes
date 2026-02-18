@@ -1,0 +1,47 @@
+---
+description: Page component structure, routing, error states, state management, and form patterns
+globs: "src/pages/**/*.tsx"
+alwaysApply: false
+---
+
+# Page Structure
+
+Every page MUST:
+- Wrap content in `<PageContainer breadcrumbs={[{ label: 'Page Name' }]}>`
+- Handle **loading** state: `if (isLoading) return <Loader />`
+- Handle **error** state: inline error message with retry button (never `window.alert`)
+- Handle **empty** state: `<TextPlaceholder>` with helpful message
+
+## Adding a New Page (4 files to touch)
+
+1. Create `src/pages/[PageName]/[PageName].tsx` (+ `.styles.ts` if needed)
+2. Add route constant to `src/app/routes.ts` — keep `ROUTES.HOME` intact (required by @UI/Breadcrumbs)
+3. Add `<Route>` element to `src/app/router.tsx`
+4. Add nav item to `NAV_ITEMS` array in `src/app/shell/Sidebar.tsx`
+
+If you skip any step, the page won't be navigable.
+
+## Navigation
+
+Use `useNavigate()` + `ROUTES` constants from `../../app/routes`:
+```typescript
+const navigate = useNavigate()
+navigate(ROUTES.TEMPLATE(id))  // dynamic route
+navigate(-1)                    // go back
+```
+Never hardcode route strings.
+
+## State Management
+
+- **Server data**: React Query hooks in `src/entities/[module]/api.ts`
+- **Local UI state**: `useState` / `useReducer` only
+- **No** Recoil, no Context providers
+- **Multi-step forms**: keep on a single route, use `useState` for step tracking
+
+## Forms
+
+Use `@tanstack/react-form`. See `planning/FEATURE-DEVELOPER-GUIDE.md` "How to Handle Forms" for the pattern.
+
+## Feedback
+
+Use inline state-driven messages for success/error feedback. Document in `CHANGELOG.md` that the main app uses `snackbarAtom` (Recoil) — the integration team will convert.

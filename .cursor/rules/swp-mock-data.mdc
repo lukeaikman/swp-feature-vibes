@@ -1,0 +1,32 @@
+---
+description: Mock data quality and consistency rules for json-server files
+globs: "{db.json,db.seed.json,routes.json}"
+alwaysApply: false
+---
+
+# Mock Data Rules
+
+## db.json
+
+- Every entity array must have at least 3-5 seed items with realistic data
+- Field names and types must match the TypeScript interface in `src/entities/[module]/types.ts`
+- Use UUIDs for IDs (not sequential numbers like 1, 2, 3) — matches production pattern
+- Include `_meta` objects with realistic ISO 8601 timestamps on entities that will have them in production
+- Use the mock user IDs from the `users` array for `created_by` / `assigned_to` fields
+
+## routes.json
+
+Every nested API path used in hooks must have a rewrite mapping to the flat key:
+```json
+{
+  "/api/audit/templates*": "/api/audit_templates$1",
+  "/api/audit/schedules*": "/api/audit_schedules$1"
+}
+```
+Without this, Axios calls to nested paths will 404.
+
+## Keeping Seed Data in Sync
+
+After modifying `db.json`, always run: `cp db.json db.seed.json`
+
+json-server mutates `db.json` on every POST/PUT/DELETE. If the data gets messy after testing, reset with: `cp db.seed.json db.json`

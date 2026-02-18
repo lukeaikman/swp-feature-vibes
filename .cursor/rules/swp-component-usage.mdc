@@ -1,0 +1,31 @@
+---
+description: UI component selection and documentation rules for SWP page files
+globs: "src/pages/**/*.tsx"
+alwaysApply: false
+---
+
+# Component Usage
+
+Always check `@UI` components before using raw MUI. See the full reference table in `planning/FEATURE-DEVELOPER-GUIDE.md` under "Available @UI Components."
+
+Import from the barrel: `import { Table, PageContainer, Badge } from '@UI'`
+Never import MUI directly when an `@UI` wrapper exists (e.g., don't use `@material-ui/core/Table` when `@UI/Table` exists).
+
+## New Components
+
+When you create a new composite component:
+- Put it in the page's `components/` directory: `src/pages/[Page]/components/[Component]/`
+- Follow the pattern: `[Component].tsx` + `[Component].styles.ts` + `index.ts`
+- Document it in `COMPONENT-LOG.md` under "New Components Created" with purpose, props, and integration notes
+
+## Styling
+
+- Use `styled-components` for component-level styles
+- Use `useTheme()` from `@material-ui/core/styles` for theme values
+- Never hardcode hex colours when a theme value exists (e.g., use `theme.palette.brand.main` not `'#FF9900'`)
+- Use `makeStyles()` for class-based styles when needed
+
+## Documentation
+
+- After using a new `@UI` component for the first time, add it to `COMPONENT-LOG.md` under "Main App Components Used"
+- After creating a new component, document it in `COMPONENT-LOG.md` under "New Components Created"

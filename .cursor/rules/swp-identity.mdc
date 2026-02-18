@@ -1,0 +1,19 @@
+---
+description: SWP feature module project identity and living document requirements
+alwaysApply: true
+---
+
+This is an isolated SWP feature module built with Vite + React + React Router + json-server mock API.
+
+Real UI components are imported from `@UI`, which aliases to the sibling `safeworkplace-web-app/src/UI/` directory.
+
+You MUST maintain three living documents throughout development — update them as you go, not at the end:
+- `CHANGELOG.md` — what you built, why, decisions made, known issues, integration notes
+- `API-CONTRACT.md` — every API endpoint the frontend calls, with full request/response specs
+- `COMPONENT-LOG.md` — every @UI component used, new components created, new dependencies, i18n strings
+
+After completing a meaningful piece of work, update `CHANGELOG.md` with what was done, decisions made, known issues, and integration notes.
+
+Before building a feature, check `planning/features/` for a specification. If one exists, read it first.
+
+For the full development protocol (component reference, routing, API patterns, types, forms, error handling, import conventions), read `planning/FEATURE-DEVELOPER-GUIDE.md`.

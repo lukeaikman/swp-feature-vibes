@@ -1,0 +1,40 @@
+---
+description: SWP technical constraints, version pins, barrel export problem, and shimmed component list. Relevant when discussing architecture, debugging import errors, making dependency decisions, or working with Vite config.
+alwaysApply: false
+---
+
+# Technical Constraints
+
+## Barrel Export Problem
+
+`@UI/index.ts` re-exports all 60+ components. ES modules load eagerly — every transitive import must resolve, even for components your module never uses. If Vite fails with "Failed to resolve import" on startup:
+1. Check the failing import path in the component source
+2. If it's a **path alias** (e.g., `@entities/something-new`): create a no-op shim in `src/shims/`, add a Vite alias in `vite.config.ts`
+3. If it's an **npm package**: install it with `npm install`
+4. Document what you did in `CHANGELOG.md`
+
+## Shimmed No-Op Components (Do NOT Use)
+
+These are shimmed for import resolution but render nothing at runtime:
+- `FileItem` — use `FilesInput` for upload UI instead
+- `SWPLogo`, `FooterLogo` — not needed in a feature module
+- `InfoItemsList`, `AnonymousBadge` — report-specific, unlikely needed
+- `InfoBlockCollapsible` — use `ContentBox` instead
+- `NextProgressBar` — not needed outside Next.js
+
+## Version Pins
+
+- `date-fns` must stay **v2.x** — the main app uses v2; v4.x has an incompatible API. Do not upgrade.
+- `json-server` must stay **v0.17.x** — v1.x rewrote the CLI entirely (`--routes` doesn't exist, pagination changed).
+
+## Forbidden Patterns
+
+- No Recoil (`useRecoilState`, `atom`, `RecoilRoot`)
+- No Lingui configuration (the shim handles it — just use `t` and `Trans` as normal)
+- No Next.js APIs (`useRouter`, `getServerSideProps`, `getStaticProps`, `next/navigation`)
+- No `export default` in entity files (`src/entities/`) — use named exports only
+- No Context providers (`createContext`, `useContext`) for state management — use `useState`/`useReducer` for local state, React Query for server state
+
+## .npmrc
+
+The `.npmrc` with `legacy-peer-deps=true` is required. MUI v4 declares a peer dependency on React 16/17, which conflicts with React 18. Do not remove it.
