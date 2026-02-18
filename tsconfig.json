@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Path aliases (must match vite.config.ts) */
+    "baseUrl": ".",
+    "paths": {
+      "@UI": ["../safeworkplace-web-app/src/UI"],
+      "@UI/*": ["../safeworkplace-web-app/src/UI/*"],
+      "@app/theme": ["./src/shims/theme"],
+      "@app/theme/*": ["./src/shims/theme/*"],
+      "@app/routes": ["./src/app/routes"],
+      "@app/format": ["./src/shims/format"],
+      "@lingui/macro": ["./src/shims/lingui"],
+      "@lingui/react": ["./src/shims/lingui"],
+      "@entities/user": ["./src/types/user"],
+      "@entities/translation": ["./src/shims/translation"]
+    }
+  },
+  "include": ["src", "src/types/mui.d.ts"]
+}

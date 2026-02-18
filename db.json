@@ -1,0 +1,24 @@
+{
+  "users": [
+    {
+      "id": "8f0f9397-089c-4e99-9dc6-96b5bb742504",
+      "email": "lloyd+master@safework.place",
+      "firstName": "lloyd",
+      "lastName": "master",
+      "roles": ["ADMIN"],
+      "language": "en",
+      "picture": null,
+      "timeZone": "Africa/Johannesburg"
+    },
+    {
+      "id": "086f205f-1973-4836-8790-b1f2743a8ab0",
+      "email": "lloyd+user@safework.place",
+      "firstName": "lloyd",
+      "lastName": "user",
+      "roles": ["ADMIN"],
+      "language": "en",
+      "picture": null,
+      "timeZone": "Europe/London"
+    }
+  ]
+}
