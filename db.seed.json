@@ -20,5 +20,141 @@
       "picture": null,
       "timeZone": "Europe/London"
     }
+  ],
+  "onboarding_organisations": [
+    {
+      "id": "org-001",
+      "organisationName": "Sunrise Care Group",
+      "address": {
+        "addressLine1": "45 Victoria Street",
+        "addressLine2": "Suite 300",
+        "city": "London",
+        "countyOrState": "Greater London",
+        "postcode": "SW1H 0EU",
+        "country": "gb"
+      },
+      "phoneNumber": "+44 20 7946 0958",
+      "organisationUrl": "https://sunrisecaregroup.example.com",
+      "primaryContactId": "person-001",
+      "isDeleted": false,
+      "_meta": {
+        "created_at": "2026-01-10T09:00:00.000Z",
+        "updated_at": "2026-01-10T09:00:00.000Z",
+        "created_by": "8f0f9397-089c-4e99-9dc6-96b5bb742504",
+        "updated_by": "8f0f9397-089c-4e99-9dc6-96b5bb742504"
+      }
+    }
+  ],
+  "onboarding_people": [
+    {
+      "id": "person-001",
+      "firstName": "Sarah",
+      "lastName": "Mitchell",
+      "email": "sarah.mitchell@sunrisecaregroup.example.com",
+      "phoneNumber": "+44 7700 900123",
+      "role": "primary_contact",
+      "createdAt": "2026-01-10T09:00:00.000Z"
+    },
+    {
+      "id": "person-002",
+      "firstName": "James",
+      "lastName": "O'Connor",
+      "email": "james.oconnor@sunrisecaregroup.example.com",
+      "phoneNumber": "+44 7700 900456",
+      "role": "team_member",
+      "createdAt": "2026-01-12T10:30:00.000Z"
+    },
+    {
+      "id": "person-003",
+      "firstName": "Emily",
+      "lastName": "Davis",
+      "email": "emily.davis@sunrisecaregroup.example.com",
+      "phoneNumber": "+44 7700 900789",
+      "role": "team_member",
+      "createdAt": "2026-01-15T14:00:00.000Z"
+    }
+  ],
+  "onboarding_locations": [
+    {
+      "id": "loc-001",
+      "organisationId": "org-001",
+      "locationName": "Sunrise Manor — London",
+      "address": {
+        "addressLine1": "45 Victoria Street",
+        "addressLine2": "Suite 300",
+        "city": "London",
+        "countyOrState": "Greater London",
+        "postcode": "SW1H 0EU",
+        "country": "gb"
+      },
+      "countryOfOperation": "gb",
+      "locale": "GB",
+      "locationUrl": "https://sunrisecaregroup.example.com/london",
+      "keyContactId": "person-001",
+      "selectedProviderCategoryIds": ["long_term_care"],
+      "selectedProviderSubcategoryIds": ["nursing_homes"],
+      "careServiceIds": ["rehabilitation", "palliative"],
+      "isDeleted": false,
+      "_meta": {
+        "created_at": "2026-01-10T09:30:00.000Z",
+        "updated_at": "2026-01-10T09:30:00.000Z",
+        "created_by": "8f0f9397-089c-4e99-9dc6-96b5bb742504",
+        "updated_by": "8f0f9397-089c-4e99-9dc6-96b5bb742504"
+      }
+    },
+    {
+      "id": "loc-002",
+      "organisationId": "org-001",
+      "locationName": "Sunrise House — Belfast",
+      "address": {
+        "addressLine1": "12 Donegall Square",
+        "addressLine2": "",
+        "city": "Belfast",
+        "countyOrState": "Antrim",
+        "postcode": "BT1 5GS",
+        "country": "ni"
+      },
+      "countryOfOperation": "ni",
+      "locale": "Northern Ireland",
+      "locationUrl": "",
+      "keyContactId": "person-002",
+      "selectedProviderCategoryIds": ["mental_health"],
+      "selectedProviderSubcategoryIds": ["substance_abuse_facilities"],
+      "careServiceIds": ["detox", "outpatient_rehab"],
+      "isDeleted": false,
+      "_meta": {
+        "created_at": "2026-01-11T11:00:00.000Z",
+        "updated_at": "2026-01-11T11:00:00.000Z",
+        "created_by": "8f0f9397-089c-4e99-9dc6-96b5bb742504",
+        "updated_by": "8f0f9397-089c-4e99-9dc6-96b5bb742504"
+      }
+    },
+    {
+      "id": "loc-003",
+      "organisationId": "org-001",
+      "locationName": "Sunrise Lodge — Dublin",
+      "address": {
+        "addressLine1": "8 Merrion Square",
+        "addressLine2": "",
+        "city": "Dublin",
+        "countyOrState": "County Dublin",
+        "postcode": "D02 Y098",
+        "country": "ie"
+      },
+      "countryOfOperation": "ie",
+      "locale": "Ireland",
+      "locationUrl": "",
+      "keyContactId": "person-003",
+      "selectedProviderCategoryIds": ["long_term_care", "mental_health"],
+      "selectedProviderSubcategoryIds": ["nursing_homes"],
+      "careServiceIds": ["palliative", "dementia"],
+      "isDeleted": false,
+      "_meta": {
+        "created_at": "2026-01-14T08:45:00.000Z",
+        "updated_at": "2026-01-14T08:45:00.000Z",
+        "created_by": "8f0f9397-089c-4e99-9dc6-96b5bb742504",
+        "updated_by": "8f0f9397-089c-4e99-9dc6-96b5bb742504"
+      }
+    }
   ]
 }

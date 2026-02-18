@@ -10,13 +10,9 @@ import {
   NavItem,
 } from './Layout.styles'
 
-// Configure your module's navigation items here
 const NAV_ITEMS = [
   { label: 'Dashboard', path: ROUTES.DASHBOARD },
-  // Add more as you build pages, e.g.:
-  // { label: 'Templates', path: ROUTES.TEMPLATES },
-  // { label: 'Schedule', path: ROUTES.SCHEDULE },
-  // { label: 'Findings', path: ROUTES.FINDINGS },
+  { label: 'Onboarding', path: ROUTES.ONBOARDING },
 ]
 
 export const Sidebar = () => {
