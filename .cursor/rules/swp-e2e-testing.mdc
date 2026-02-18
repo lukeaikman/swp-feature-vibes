@@ -1,0 +1,65 @@
+---
+description: Playwright E2E test patterns, assertions, and conventions for feature testing
+globs: "e2e/**/*.ts"
+alwaysApply: false
+---
+
+# E2E Testing with Playwright
+
+## File structure
+
+One test file per feature: `e2e/[feature-name].spec.ts`
+
+## Imports
+
+Always import from `@playwright/test`:
+```typescript
+import { test, expect } from '@playwright/test'
+```
+
+## Navigation
+
+Use relative paths — `baseURL` is configured in `playwright.config.ts`:
+```typescript
+await page.goto('/onboarding')   // Good
+await page.goto('http://localhost:4000/onboarding')  // Bad
+```
+
+## Form interaction
+
+- `page.fill(selector, value)` — clears the input and types (use for text inputs)
+- `page.click(selector)` — clicks a button or element
+- `page.focus(selector)` + `page.blur(selector)` — for testing validation on blur
+- `page.locator('text=Button Label')` — find elements by visible text
+- `page.locator('input[name="fieldName"]')` — find inputs by name attribute
+
+## Assertions
+
+Use Playwright's auto-waiting `expect`:
+```typescript
+await expect(page.locator('text=Success')).toBeVisible()
+await expect(page.locator('text=Error')).not.toBeVisible()
+```
+
+## Testing against json-server
+
+Tests run against the live dev server (Vite + json-server). Do NOT mock `fetch` or `axios` — the point is to test the full stack including the API proxy and route rewrites.
+
+Ensure `db.json` seed data supports your test scenarios. If a test mutates data (POST/PUT/DELETE), consider test isolation — either reset the DB or use unique values.
+
+## Test structure
+
+Wrap related tests in `test.describe()`:
+```typescript
+test.describe('Feature Name', () => {
+  test('scenario', async ({ page }) => { ... })
+})
+```
+
+## What to cover
+
+Every feature should have tests for:
+1. Page loads and renders correctly
+2. Validation errors appear on blur / submit, NOT on initial load
+3. Happy path: fill form, submit, verify success
+4. Error states: verify feedback when API fails

@@ -29,6 +29,7 @@ These fire automatically based on which files you're editing. You never need to 
 | `swp-api-hooks` | When editing `src/entities/**/*.ts` | Hook patterns, query keys, Axios typing, invalidation, API-CONTRACT.md documentation |
 | `swp-import-conventions` | When editing entities or pages | Barrel imports, no shim imports from pages/entities, two-level `../../` depth |
 | `swp-mock-data` | When editing `db.json`, `routes.json`, `db.seed.json` | Realistic seed data, match TypeScript interfaces, UUID IDs, keep seed in sync |
+| `swp-e2e-testing` | When editing `e2e/**/*.ts` | Playwright test patterns, relative page.goto paths, page.fill/click for forms, expect assertions, test against live dev server |
 
 ### Subagents (`.cursor/agents/`)
 
@@ -50,6 +51,7 @@ These activate automatically when the AI recognises the task. You can also menti
 | `swp-add-endpoint` | "add an API call", "create a hook", "wire up an endpoint" | 7-step workflow: seed data, route rewrite, hook, types, barrel, API-CONTRACT.md documentation |
 | `swp-add-entity` | "create a new entity", "add a data model", "start a new feature area" | 8-step workflow: types, constants, api, helpers, hooks, barrel index, seed data, first API-CONTRACT entry |
 | `swp-handoff-checklist` | "is this ready?", "prepare for handoff", "run the checklist" | Runs the full 20-item handoff checklist from FEATURE-DEVELOPER-GUIDE.md, produces pass/fail report |
+| `swp-add-e2e-test` | "add e2e tests", "write tests for this feature", "add playwright tests" | Reads feature pages and routes, identifies user flows, creates `e2e/[feature].spec.ts` with happy path, validation, and error state tests |
 
 ---
 
