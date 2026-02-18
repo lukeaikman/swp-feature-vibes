@@ -9,6 +9,7 @@ The module was developed against:
 - A **json-server mock API** (`db.json`) that defines the data contract
 - **Local type definitions** based on production interfaces (may have drifted)
 - A **simplified app shell** (not the real AuthLayout/Sidebar)
+- A `.npmrc` with `legacy-peer-deps=true` for MUI v4 / React 18 compatibility (the main app handles this the same way — no action needed on your side)
 
 ### Estimated Integration Time
 
@@ -152,8 +153,10 @@ Also diff the `package.json` files to catch any unlisted additions:
 ```bash
 # See what the module installed beyond the template defaults
 diff <(jq '.dependencies | keys[]' [module]/package.json | sort) \
-     <(echo '"@date-io/date-fns"\n"@material-ui/core"\n"@material-ui/icons"\n"@material-ui/lab"\n"@material-ui/pickers"\n"@tanstack/react-form"\n"@tanstack/react-query"\n"@tanstack/react-table"\n"@wojtekmaj/react-daterange-picker"\n"axios"\n"clsx"\n"color-hash"\n"date-fns"\n"lodash"\n"react"\n"react-dom"\n"react-router-dom"\n"styled-components"' | sort)
+     <(echo '"@date-io/date-fns"\n"@material-ui/core"\n"@material-ui/icons"\n"@material-ui/lab"\n"@material-ui/pickers"\n"@tanstack/react-form"\n"@tanstack/react-query"\n"@tanstack/react-table"\n"@wojtekmaj/react-daterange-picker"\n"axios"\n"clsx"\n"color-hash"\n"date-fns"\n"lodash"\n"react"\n"react-content-loader"\n"react-dom"\n"react-markdown"\n"react-router-dom"\n"recharts"\n"rehype-raw"\n"remark-gfm"\n"styled-components"\n"use-resize-observer"\n"uuid"' | sort)
 ```
+
+> **Note:** The template's baseline dependency list includes 7 packages (`react-content-loader`, `react-markdown`, `recharts`, `rehype-raw`, `remark-gfm`, `use-resize-observer`, `uuid`) that are only present because of the `@UI` barrel export's transitive dependencies. Only packages added *by the feature developer* (i.e., not in the template baseline) need to be installed in the main app. However, cross-check each of these 7 against `safeworkplace-web-app/package.json` — if the main app already has one at a different major version (e.g., `recharts@^2.x` vs template's `^3.x`), align to the main app's version to avoid conflicts.
 
 Any additional packages need to be installed in the main app.
 

@@ -28,7 +28,7 @@ The main app uses Next.js 12 with Pages Router. We don't replicate that because:
 
 ### Why Reference Real UI Components (Not Copy, Not Vanilla MUI)
 
-The main app has ~20 reusable components in `safeworkplace-web-app/src/UI/` (Button, Input, Table, Modal, etc.). These are thin wrappers around Material-UI v4.
+The main app has 60+ reusable components in `safeworkplace-web-app/src/UI/` (Button, Input, Table, Modal, etc.), all re-exported via a single barrel file (`index.ts`). These are thin wrappers around Material-UI v4.
 
 | Approach | Pros | Cons |
 |---|---|---|
@@ -36,24 +36,44 @@ The main app has ~20 reusable components in `safeworkplace-web-app/src/UI/` (But
 | Copy components into module | Self-contained | Fork diverges immediately; Day 1 spent copying not building |
 | Use vanilla MUI directly | Simplest setup | Components look different; integration requires wrapping everything in custom components later |
 
-Only **1 of 16** core UI components uses Next.js (`Breadcrumbs` imports `next/link`). Everything else is pure React + MUI. A tiny shim handles that one case.
+Only a handful of the 60+ UI components have Next.js or domain-specific imports. However, due to the **barrel export problem** (see below), all transitive imports must resolve — not just the ones your page uses.
 
 ### Why Shims (Not Provider Stack)
 
 The real UI components import from `@app/theme`, which internally calls `useGetClient()` (React Query) and `useThemeMode()` (Recoil). Rather than setting up those providers and mocking their data sources, we **shim the modules themselves** with hardcoded values:
+
+**Primary shims** (used by the components your module actually renders):
 
 - `@app/theme` → local shim that exports hardcoded MUI theme + types + helpers
 - `@lingui/macro` → local shim where `t` is a passthrough (returns the string as-is)
 - `next/link` → local shim that renders React Router `<Link>`
 - `next/head` → local shim that renders `null` (page titles don't matter in dev)
 - `@app/routes` → local file with our module's routes
-- `@app/format` → local copy of the one helper function used (`getFullName`)
+- `@app/format` → local copy of the one helper function used (`getFullName`). Uses `import { startCase } from 'lodash'` (named import) rather than the main app's `import startCase from 'lodash/startCase'` (subpath import) — Vite tree-shakes either way in dev, but the integration lead may want to align the import style during integration.
 - `@entities/user` → local file with `IUser` type + `IUserPicture` type
 - `@entities/translation` → local file with the `SAFE_WORKPLACE` constant
+
+**Barrel export shims** (needed because `@UI/index.ts` re-exports ALL components — see below):
+
+- `@public/logos/logo-swp.svg` → empty string (used by `FooterLogo`, `SWPLogo`)
+- `@report-configs` → stub hooks/types (used by `AnonymousBadge`, `InfoItemsList`)
+- `@entities/report` → stub hook (used by `InfoBlockCollapsible`)
+- `@widgets` → stub component (used by `FileItem`)
+- `nextjs-progressbar` → no-op component (used by `NextProgressBar`)
 
 Additionally, `src/types/mui.d.ts` provides the MUI module augmentation that declares custom palette keys (`brand`, `gray`, etc.) and custom theme root properties (`drawerWidth`, `headerHeight`, `welcome`). Without this, TypeScript will report errors on every UI component that accesses these custom properties.
 
 This **eliminates Recoil and Lingui entirely** from the dependency tree. The dev doesn't need to know they exist.
+
+### The Barrel Export Problem
+
+`safeworkplace-web-app/src/UI/index.ts` is a barrel file that re-exports all 60+ UI components. When a page does `import { PageContainer } from '@UI'`, Vite resolves that to the barrel file. ES modules evaluate eagerly in the browser — **every** re-exported module is loaded and its imports resolved, not just the ones the page uses.
+
+This means if `FileItem` imports from `@widgets` and `AnonymousBadge` imports from `@report-configs`, those imports must resolve even if your module never uses `FileItem` or `AnonymousBadge`. Without the barrel export shims, Vite throws hard errors on startup.
+
+The fix is lightweight — each barrel shim is a 2-5 line no-op. The shimmed components won't function correctly at runtime, but they won't crash the import chain.
+
+**If someone adds a new UI component upstream with a new unshimmed import**, `npm run dev` will fail. The fix is always the same: check the failing import, add a small shim or install the missing package, and add the Vite alias if it's a path alias. This is documented in the troubleshooting section of the README.
 
 ### Why Local Types (Not Imported from Main App)
 
@@ -117,7 +137,12 @@ swp-module-template/
 │   │   ├── next-link.tsx              # Renders React Router <Link>
 │   │   ├── next-head.tsx              # No-op (renders null)
 │   │   ├── format.ts                  # getFullName() helper
-│   │   └── translation.ts             # SAFE_WORKPLACE constant
+│   │   ├── translation.ts             # SAFE_WORKPLACE constant
+│   │   ├── public-logo.ts            # Empty string (barrel: FooterLogo, SWPLogo)
+│   │   ├── report-configs.ts         # Stub hooks/types (barrel: AnonymousBadge, InfoItemsList)
+│   │   ├── entities-report.ts        # Stub hook (barrel: InfoBlockCollapsible)
+│   │   ├── widgets.tsx               # Stub component (barrel: FileItem)
+│   │   └── nextjs-progressbar.tsx    # No-op component (barrel: NextProgressBar)
 │   │
 │   ├── types/
 │   │   ├── mui.d.ts                   # MUI module augmentation (custom palette + theme keys)
@@ -150,6 +175,8 @@ swp-module-template/
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts                     # Alias config pointing @UI to main app
+├── .npmrc                             # legacy-peer-deps=true (MUI v4 + React 18 compat)
+├── .gitignore
 ├── setup.sh                           # One-time setup script (validates paths, installs deps)
 └── README.md                          # Setup guide
 ```
@@ -211,8 +238,16 @@ export default defineConfig({
       'next/head': path.resolve(__dirname, 'src/shims/next-head'),
       '@entities/user': path.resolve(__dirname, 'src/types/user'),
       '@entities/translation': path.resolve(__dirname, 'src/shims/translation'),
+
+      // Barrel export shims — resolve transitive imports from @UI components
+      // that the barrel re-exports even if the module never uses them
+      '@public/logos/logo-swp.svg': path.resolve(__dirname, 'src/shims/public-logo'),
+      '@report-configs': path.resolve(__dirname, 'src/shims/report-configs'),
+      '@entities/report': path.resolve(__dirname, 'src/shims/entities-report'),
+      '@widgets': path.resolve(__dirname, 'src/shims/widgets'),
+      'nextjs-progressbar': path.resolve(__dirname, 'src/shims/nextjs-progressbar'),
     },
-    // IMPORTANT: Prevents duplicate package resolution if safeworkplace-web-app
+    // Prevents duplicate package resolution if safeworkplace-web-app
     // has node_modules installed. Without this, Vite may resolve react, MUI, etc.
     // from the web app's node_modules for aliased UI component files, causing
     // "Invalid hook call" errors and broken theme/styled-components contexts.
@@ -732,7 +767,14 @@ echo "Run 'npm install && npm run dev' to start."
     "lodash": "^4.17.21",
     "clsx": "^2.x",
     "color-hash": "^2.x",
-    "@wojtekmaj/react-daterange-picker": "^6.x"
+    "@wojtekmaj/react-daterange-picker": "^6.x",
+    "react-content-loader": "^7.x",
+    "react-markdown": "^10.x",
+    "recharts": "^3.x",
+    "rehype-raw": "^7.x",
+    "remark-gfm": "^4.x",
+    "use-resize-observer": "^9.x",
+    "uuid": "^13.x"
   },
   "devDependencies": {
     "vite": "^5.x",
@@ -749,7 +791,13 @@ echo "Run 'npm install && npm run dev' to start."
 }
 ```
 
-These match the main app's versions where applicable. `json-server` and `concurrently` are the only additions.
+These match the main app's versions where applicable. The last 7 dependencies (`react-content-loader` through `uuid`) are required because of the barrel export problem — they are transitive dependencies of UI components that the `@UI` barrel re-exports even if your module never uses those components. Without them, `npm run dev` fails on startup.
+
+**`date-fns` is pinned to v2.x.** The main app uses v2. The latest `date-fns` is v4.x with a completely different API (no more individual function imports, different locale handling). Do not upgrade — the template will break and the integration will be incompatible.
+
+### .npmrc
+
+The template includes a `.npmrc` file with `legacy-peer-deps=true`. This is required because MUI v4 declares a peer dependency on React 16/17, which conflicts with React 18. The main app handles this the same way. Without this file, `npm install` will fail with `ERESOLVE unable to resolve dependency tree`.
 
 ---
 
@@ -785,6 +833,14 @@ For these cases, the dev can either:
 
 The integration checklist notes where the real API needs custom logic that json-server can't replicate.
 
+### Barrel Export Means All UI Transitive Deps Must Resolve
+
+The `@UI` barrel export (`safeworkplace-web-app/src/UI/index.ts`) re-exports all 60+ components. ES modules evaluate eagerly, so `import { PageContainer } from '@UI'` forces the browser to load the entire barrel and all its transitive dependencies — including components the module never uses.
+
+This means if someone upstream adds a new UI component with a new unresolvable import (e.g., a new `@entities/something`), `npm run dev` will break. The fix is always the same: check the failing import, add a small shim file or install the missing package, and (if it's a path alias) add a Vite alias.
+
+The template ships with 5 barrel-export shims and 7 additional npm packages specifically to handle this. See the "Barrel Export Problem" section above for details.
+
 ### Types Will Drift
 
 Local type definitions (`src/types/`) are snapshots of the main app's types. They may drift over time. Each type file includes a header comment:
@@ -794,6 +850,22 @@ Local type definitions (`src/types/`) are snapshots of the main app's types. The
 // Last synced: 2026-02-17
 // Integration: verify these match production before merging
 ```
+
+---
+
+## Known Gotchas from First Build
+
+When this template was first built and tested (February 2026), these issues surfaced that were not predicted by the original architecture plan. They are documented here as institutional knowledge for future template maintainers.
+
+1. **`npm install` fails out of the box without `.npmrc`.** MUI v4 declares a peer dependency on React 16/17. React 18 triggers `ERESOLVE`. Fix: `.npmrc` with `legacy-peer-deps=true`. The main app handles it the same way — this was simply not anticipated in the original plan.
+
+2. **The barrel export problem.** The plan originally anticipated 8 shims. In practice, `@UI/index.ts` re-exports all 60+ components, and Vite eagerly evaluates every import chain. This required 5 additional shims (for path aliases used by components the module never renders) and 7 additional npm packages (transitive dependencies of those components). See the "Barrel Export Problem" section for full details.
+
+3. **Barrel exports will break again.** If someone upstream adds a new UI component with a new unshimmed import, `npm run dev` fails immediately. This is the most likely maintenance burden for the template. The fix is always the same: identify the failing import, add a shim or install the package, add a Vite alias if needed.
+
+4. **`date-fns` must stay at v2.x.** The main app uses v2. The latest is v4.x with a completely different API. Running `npm update` or `npm install date-fns@latest` will break everything.
+
+5. **`json-server` must stay at v0.17.x.** Version 1.x rewrote the CLI entirely — `--routes` doesn't exist, pagination syntax changed. The plan specified this correctly, but it's easy to accidentally install v1 if a developer runs `npm install json-server` without a version pin.
 
 ---
 
@@ -814,5 +886,33 @@ Local type definitions (`src/types/`) are snapshots of the main app's types. The
 | App shell | Simplified layout with SWP visual language |
 | Routing | React Router (replaced by Next.js on integration) |
 | Types | Local copies, manually tracked for drift |
-| Spin up | `npm install && npm run dev` |
+| Spin up | `npm install && npm run dev` (optional: `bash setup.sh` first to validate environment) |
 | Portable output | `src/entities/[module]/` + `src/pages/` + `db.json` |
+
+---
+
+## Maintaining This Template
+
+This template references live source code from `safeworkplace-web-app/src/UI/` via Vite aliases. As the main app evolves, the template may need updates. Here's the maintenance protocol:
+
+### Periodic Validation (Monthly or Before a New Module Starts)
+
+1. Pull the latest `develop` branch of `safeworkplace-web-app`
+2. Run `npm install && npm run dev` in the template
+3. If Vite fails with "Failed to resolve import" errors, follow the barrel export fix pattern:
+   - If the failing import is a **path alias** (e.g., `@entities/something-new`): create a small no-op shim in `src/shims/`, add a Vite alias in `vite.config.ts`
+   - If the failing import is an **npm package**: install it with `npm install`
+4. Update `package.json` and `vite.config.ts` as needed
+5. Commit back to the template repo
+
+### What Triggers Breakage
+
+- A new UI component is added to `@UI/index.ts` that imports from a module the template hasn't shimmed
+- An existing UI component adds a new import from an unresolved module
+- A dependency version in the main app changes in a breaking way (e.g., `date-fns` v2 → v4)
+
+### What Doesn't Trigger Breakage
+
+- New pages, entities, or API routes in the main app (the template doesn't reference these)
+- Changes to component props or behaviour (the template uses the real components)
+- Changes to the main app's theme values (the template uses hardcoded values — cosmetic drift only)

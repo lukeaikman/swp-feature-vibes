@@ -72,17 +72,14 @@ These are the real production components from `safeworkplace-web-app/src/UI/`, a
 | Component | What It Does |
 |---|---|
 | `MultiplePicker` | Multiple checkbox selection group. |
-
-### Require extra dependency installation
-
-These components work but need packages installed that aren't in the template's `package.json`. Install the dependency, then document it in `COMPONENT-LOG.md` under "New Dependencies Added."
-
-| Component | What It Does | Install |
-|---|---|---|
-| `PieChart` | Recharts-based pie chart wrapper. | `npm install recharts` |
-| `MarkdownParser` | Renders markdown content as HTML. | `npm install react-markdown remark-gfm rehype-raw` |
+| `PieChart` | Recharts-based pie chart wrapper. |
+| `MarkdownParser` | Renders markdown content as HTML. |
 
 **To see the full props interface for any component**, open its `.tsx` file in `safeworkplace-web-app/src/UI/[Component]/[Component].tsx`.
+
+### Components that do NOT work in isolation
+
+A few components are shimmed for import resolution (so the `@UI` barrel doesn't crash Vite) but render as no-ops at runtime. **Do not use these — see the README's "Components you should NOT use" section** for the full list and alternatives.
 
 ---
 
@@ -440,7 +437,7 @@ Packages installed that are NOT in the base template's `package.json`:
 | Package | Version | Why | Already in main app? |
 |---|---|---|---|
 | `react-beautiful-dnd` | `^13.x` | Drag-and-drop for template builder | Yes (used in CaseManagement) |
-| `recharts` | `^2.x` | Dashboard pie chart | Yes (used in Training) |
+| `recharts` | `^3.x` | Dashboard pie chart | Yes (used in Training) |
 | (add rows as you install packages) | | | |
 ```
 
@@ -490,7 +487,7 @@ theme.palette.brand.main    // '#FF9900'
 
 The `@app/format` shim **only exports `getFullName`** — the only function from the main app's `format.ts` that UI components import. Other utilities available in the main app (such as `formatDate`, `formatCurrency`, etc.) are **not available** in this isolated environment.
 
-If you need date formatting, use `date-fns` directly (add it to your `package.json`). For other formatting needs, create local utility functions in `src/entities/[module]/helpers.ts` and document them in `COMPONENT-LOG.md` so the integration lead knows what to replace with main app equivalents.
+If you need date formatting, use `date-fns` directly (already in `package.json` at v2.x — do not upgrade, the main app uses v2). For other formatting needs, create local utility functions in `src/entities/[module]/helpers.ts` and document them in `COMPONENT-LOG.md` so the integration lead knows what to replace with main app equivalents.
 
 ---
 
@@ -1203,3 +1200,4 @@ Before marking your module as complete:
 | Document a decision | Add to `CHANGELOG.md` |
 | Document an API call | Add to `API-CONTRACT.md` with full field specs |
 | Document component usage | Add to `COMPONENT-LOG.md` |
+| Fix "Failed to resolve import" on startup | Barrel export issue — see README troubleshooting section. Add a shim or install the missing package |

@@ -71,6 +71,8 @@ npm install
 npm run dev
 ```
 
+> **Note:** The template includes a `.npmrc` with `legacy-peer-deps=true`. This is required because MUI v4 declares a peer dependency on React 16/17, which conflicts with React 18 (the main app handles this the same way). You don't need to do anything — it's pre-configured.
+
 This starts two things simultaneously:
 - **Vite dev server** on `http://localhost:3000` — your module's UI
 - **json-server** on `http://localhost:3001` — your mock API (serves data from `db.json`)
@@ -122,6 +124,8 @@ Some UI components internally import from modules that depend on Recoil, Lingui,
 | `@entities/translation` | Local shim | Exports the `SAFE_WORKPLACE` constant |
 | `@app/format` | Local shim | `getFullName()` helper |
 
+Additionally, the `@UI` barrel export re-exports all 60+ components. ES modules load eagerly, so even components your module never uses must have their transitive imports resolvable. The template includes 5 extra "barrel shims" (`@public/logos/logo-swp.svg`, `@report-configs`, `@entities/report`, `@widgets`, `nextjs-progressbar`) that provide no-op stubs for these imports.
+
 You don't need to know any of this to use the template. It's invisible — components just work.
 
 ### Mock API (json-server)
@@ -140,29 +144,21 @@ cp db.seed.json db.json
 
 ## Components you should NOT use
 
-Most of the 55+ UI components work out of the box. A handful have deeper dependencies that aren't shimmed or aren't installed. **Avoid these:**
+Most of the 60+ UI components work out of the box — including `Table`, `PageContainer`, `PageHeader`, `Input`, `Select`, `Modal`, `Badge`, `Avatar`, `FilesInput`, `DatePicker`, `Autocomplete`, `Button`, `Loader`, `SearchInput`, `TabSwitch`, `ContentBox`, `Breadcrumbs`, `Checkbox`, `Switch`, `RadioInput`, `ParticipantsList`, `PieChart`, `MarkdownParser`, `SkeletonLoader`, etc.
 
-### Unshimmed dependencies (will fail to resolve)
+A handful of components are **shimmed for Vite resolution** (they won't crash the import chain) but return **no-op stubs at runtime** — meaning they render nothing or behave incorrectly if you try to use them. **Avoid these:**
 
-| Component | Why | Alternative |
+| Component | Why it doesn't work | Alternative |
 |---|---|---|
-| `FileItem` | Imports `FilePreviewModal` from `@widgets` | Use `FilesInput` for upload UI; render file lists manually |
-| `SWPLogo` | Imports SVG from `@public/logos/` | Not needed in a feature module |
+| `FileItem` | `@widgets/FilePreviewModal` is a no-op stub | Use `FilesInput` for upload UI; render file lists manually |
+| `SWPLogo` | `@public/logos/logo-swp.svg` is an empty string | Not needed in a feature module |
 | `FooterLogo` | Same as above | Not needed in a feature module |
-| `InfoItemsList` | Imports from `@report-configs` | Report-specific; unlikely to be needed |
-| `InfoBlockCollapsible` | Imports from `@entities/report` | Use `ContentBox` instead |
-| `AnonymousBadge` | Imports from `@report-configs` | Report-specific; unlikely to be needed |
+| `InfoItemsList` | `@report-configs` hooks return null | Report-specific; unlikely to be needed |
+| `InfoBlockCollapsible` | `@entities/report` hook is a stub | Use `ContentBox` instead |
+| `AnonymousBadge` | `@report-configs` hooks return null | Report-specific; unlikely to be needed |
+| `NextProgressBar` | `nextjs-progressbar` is a no-op | Not needed outside Next.js |
 
-### Missing third-party dependencies (install if you need them)
-
-These components work fine but depend on packages not included in the template's `package.json`. Install the dependency yourself if you need the component, and document it in `COMPONENT-LOG.md`.
-
-| Component | Missing dependency | Install command |
-|---|---|---|
-| `PieChart` | `recharts` | `npm install recharts` |
-| `MarkdownParser` | `react-markdown`, `remark-gfm`, `rehype-raw` | `npm install react-markdown remark-gfm rehype-raw` |
-
-Everything else — `Table`, `PageContainer`, `PageHeader`, `Input`, `Select`, `Modal`, `Badge`, `Avatar`, `FilesInput`, `DatePicker`, `Autocomplete`, `Button`, `Loader`, `SearchInput`, `TabSwitch`, `ContentBox`, `Breadcrumbs`, `Checkbox`, `Switch`, `RadioInput`, `ParticipantsList`, etc. — works fine out of the box.
+Everything else works out of the box.
 
 ---
 
@@ -228,11 +224,21 @@ cp db.seed.json db.json
 
 ### "Cannot find module '...'" in a @UI component you didn't touch
 
-If Vite suddenly can't resolve an import inside a `@UI` component, someone upstream added a new dependency to that component (e.g., imported from `@entities/something-new` or a new npm package). Fix: check the failing import in the component source, then either add a shim for it or install the missing package. Document what you did in `CHANGELOG.md`.
+This happens because `@UI/index.ts` re-exports all 60+ components as a barrel export. ES modules load eagerly, so every transitive import across every component must resolve — even for components your module never uses. If someone upstream adds a new UI component (or a new import to an existing one), Vite will fail on startup.
+
+**Fix:** Check the failing import path in the component source. Then either:
+1. If it's a **path alias** (e.g., `@entities/something-new`): create a small shim file in `src/shims/` and add a Vite alias in `vite.config.ts`
+2. If it's an **npm package** (e.g., `some-new-package`): install it with `npm install`
+
+Document what you did in `CHANGELOG.md`.
 
 ### json-server commands don't work / "Unknown option --routes"
 
 The template requires `json-server` **v0.x** (specifically `^0.17.x`). Version 1.x completely rewrote the CLI — `--routes` doesn't exist, pagination syntax changed, etc. If you accidentally installed v1, downgrade: `npm install json-server@0.17.4`.
+
+### npm install fails with "ERESOLVE unable to resolve dependency tree"
+
+The template's `.npmrc` should handle this automatically (`legacy-peer-deps=true`). If it's missing or you're seeing this error, create `.npmrc` in the project root with the content `legacy-peer-deps=true`. The cause is MUI v4 declaring `peer react@"^16.8.0 || ^17.0.0"` while the template uses React 18.
 
 ### The app looks wrong / styles are broken
 
