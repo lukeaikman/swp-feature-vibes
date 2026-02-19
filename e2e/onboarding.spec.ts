@@ -278,11 +278,11 @@ test.describe('Onboarding Wizard', () => {
       await page.getByRole('button', { name: 'Select a country' }).click()
       await page.getByRole('option', { name: 'United Kingdom' }).click()
 
-      // Select a provider category
-      await page.getByText('Long-Term Care and Social Care', { exact: true }).click()
+      // Select a provider category (click the card, not the label which has pointerEvents: none)
+      await page.getByText('Long-Term Care and Social Care', { exact: true }).click({ force: true })
 
       // Wait for care services to render, then select one
-      await expect(page.getByText('What care services does this location provide?')).toBeVisible()
+      await expect(page.getByText('Care services')).toBeVisible()
       await page.getByText('Rehabilitation Services').click()
 
       // Submit

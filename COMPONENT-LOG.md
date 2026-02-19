@@ -68,9 +68,9 @@ Components created specifically for this module. Located in `src/pages/Onboardin
 
 **Purpose:** Category + subcategory + care services selection UI with locale-based filtering.
 
-**Props:** `locale`, `selectedCategoryIds`, `selectedSubcategoryIds`, `selectedCareServiceIds`, `onCategoriesChange`, `onSubcategoriesChange`, `onCareServicesChange`, `errors`
+**Props:** `locale`, `selectedCategoryIds`, `selectedSubcategoryIds`, `selectedCareServiceIds`, `onSelectionChange`, `errors`
 
-**What it renders:** 2-column checkbox grid for categories, nested subcategories with visibility state machine, and care services section when applicable.
+**What it renders:** Selectable category cards in a 2-column grid, accordion-based subcategory and care service sections with badge counts, removable Chip summaries, and an overall selection summary strip. All selection changes emit a single atomic `onSelectionChange` payload.
 
 **Integration notes:** Currently imports static reference data. Production should use React Query hook for provider types API.
 

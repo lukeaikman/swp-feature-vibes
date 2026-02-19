@@ -4,6 +4,7 @@ import { Divider, useMediaQuery } from '@material-ui/core'
 import { useTheme } from '@material-ui/core/styles'
 import { AddressFields } from '../AddressFields'
 import { ProviderCategorySelector } from '../ProviderCategorySelector'
+import type { SelectionPayload } from '../ProviderCategorySelector/ProviderCategorySelector'
 import { AddPersonDialog } from '../AddPersonDialog'
 import {
   getLocationLabel,
@@ -268,9 +269,14 @@ export const LocationCard = ({
             selectedCategoryIds={location.selectedProviderCategoryIds ?? []}
             selectedSubcategoryIds={location.selectedProviderSubcategoryIds ?? []}
             selectedCareServiceIds={location.careServiceIds ?? []}
-            onCategoriesChange={(ids) => onChange({ ...location, selectedProviderCategoryIds: ids })}
-            onSubcategoriesChange={(ids) => onChange({ ...location, selectedProviderSubcategoryIds: ids })}
-            onCareServicesChange={(ids) => onChange({ ...location, careServiceIds: ids })}
+            onSelectionChange={(payload: SelectionPayload) =>
+              onChange({
+                ...location,
+                selectedProviderCategoryIds: payload.selectedCategoryIds,
+                selectedProviderSubcategoryIds: payload.selectedSubcategoryIds,
+                careServiceIds: payload.selectedCareServiceIds,
+              })
+            }
           />
         </Column>
       )}
