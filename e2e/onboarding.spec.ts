@@ -281,8 +281,8 @@ test.describe('Onboarding Wizard', () => {
       // Select a provider category (click the card, not the label which has pointerEvents: none)
       await page.getByText('Long-Term Care and Social Care', { exact: true }).click({ force: true })
 
-      // Wait for care services to render, then select one
-      await expect(page.getByText('Care services')).toBeVisible()
+      // Wait for care services card to render, then select one
+      await expect(page.getByText('Care Services: Long-Term Care and Social Care')).toBeVisible()
       await page.getByText('Rehabilitation Services').click()
 
       // Submit

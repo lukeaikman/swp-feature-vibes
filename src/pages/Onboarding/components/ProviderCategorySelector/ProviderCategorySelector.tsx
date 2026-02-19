@@ -1,14 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
-import { Checkbox, Text, Column, Row } from '@UI'
+import { Checkbox, Text, Column } from '@UI'
 import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Chip,
   Collapse,
+  Divider,
+  useMediaQuery,
 } from '@material-ui/core'
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import EditOutlinedIcon from '@material-ui/icons/EditOutlined'
+import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp'
 import { makeStyles, useTheme } from '@material-ui/core/styles'
 import { HEALTHCARE_PROVIDER_TYPES } from '../../../../data/healthcare-provider-types'
 import { mapLocaleToReferenceCode } from '../../../../entities/onboarding'
@@ -57,7 +56,7 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(0, 2, 1.5, 2),
   },
   subcategoryPanel: {
-    padding: theme.spacing(0, 2, 2, 2),
+    padding: theme.spacing(1.5, 2, 2, 2),
     borderTop: `1px solid ${theme.palette.brand.main}20`,
   },
   checkboxGrid: {
@@ -70,36 +69,10 @@ const useStyles = makeStyles((theme) => ({
       marginRight: theme.spacing(1),
     },
   },
-  accordion: {
-    boxShadow: 'none',
-    '&:before': { display: 'none' },
-    borderRadius: `${theme.shape.borderRadius}px !important`,
-    border: `1px solid ${theme.palette.grey[200]}`,
-    overflow: 'hidden',
-  },
-  accordionSummary: {
-    minHeight: '48px !important',
-    '& .MuiAccordionSummary-content': {
-      margin: `${theme.spacing(1)}px 0 !important`,
-      alignItems: 'center',
-    },
-  },
-  badge: {
-    display: 'inline-flex',
+  careCardHeader: {
+    display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    fontSize: 12,
-    fontWeight: 600,
-    color: '#fff',
-    marginLeft: theme.spacing(1),
-  },
-  careServiceContainer: {
-    padding: theme.spacing(1, 0),
-    backgroundColor: `${theme.palette.info.main}05`,
-    borderRadius: theme.shape.borderRadius,
+    padding: theme.spacing(1.5, 2),
   },
   summaryStrip: {
     padding: theme.spacing(1, 2),
@@ -136,9 +109,11 @@ export const ProviderCategorySelector = ({
 }: ProviderCategorySelectorProps) => {
   const classes = useStyles()
   const theme = useTheme()
+  const isNarrow = useMediaQuery(theme.breakpoints.down('sm'))
   const localeCode = mapLocaleToReferenceCode(locale)
 
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null)
+  const [collapsedCareCardIds, setCollapsedCareCardIds] = useState<Set<string>>(new Set())
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
   const setCardRef = useCallback((id: string) => (el: HTMLDivElement | null) => {
@@ -213,12 +188,23 @@ export const ProviderCategorySelector = ({
   }
 
   const handleSubcategoryToggle = (subcategoryId: string, checked: boolean) => {
+    let nextCareServiceIds = selectedCareServiceIds
+    if (!checked) {
+      for (const cat of Object.values(HEALTHCARE_PROVIDER_TYPES)) {
+        const sub = cat.subcategories.find((s) => s.id === subcategoryId)
+        if (sub?.careServices) {
+          const idsToRemove = new Set(sub.careServices.map((s) => s.id))
+          nextCareServiceIds = nextCareServiceIds.filter((id) => !idsToRemove.has(id))
+          break
+        }
+      }
+    }
     onSelectionChange({
       selectedCategoryIds,
       selectedSubcategoryIds: checked
         ? [...selectedSubcategoryIds, subcategoryId]
         : selectedSubcategoryIds.filter((id) => id !== subcategoryId),
-      selectedCareServiceIds,
+      selectedCareServiceIds: nextCareServiceIds,
     })
   }
 
@@ -232,32 +218,41 @@ export const ProviderCategorySelector = ({
     })
   }
 
-  const availableCareServices = useMemo(() => {
-    const serviceMap = new Map<string, ICareServiceDefinition>()
-
+  const careServicesByCategory = useMemo(() => {
+    const map = new Map<string, ICareServiceDefinition[]>()
     selectedCategoryIds.forEach((catId) => {
       const category = HEALTHCARE_PROVIDER_TYPES[catId]
       if (!category) return
-
+      const serviceMap = new Map<string, ICareServiceDefinition>()
       category.careServices?.forEach((svc) => {
-        if (svc.locale.includes(localeCode)) {
-          serviceMap.set(svc.id, svc)
-        }
+        if (svc.locale.includes(localeCode)) serviceMap.set(svc.id, svc)
       })
-
       category.subcategories.forEach((sub) => {
         if (selectedSubcategoryIds.includes(sub.id) && sub.careServices) {
           sub.careServices.forEach((svc) => {
-            if (svc.locale.includes(localeCode)) {
-              serviceMap.set(svc.id, svc)
-            }
+            if (svc.locale.includes(localeCode)) serviceMap.set(svc.id, svc)
           })
         }
       })
+      if (serviceMap.size > 0) map.set(catId, Array.from(serviceMap.values()))
     })
-
-    return Array.from(serviceMap.values())
+    return map
   }, [selectedCategoryIds, selectedSubcategoryIds, localeCode])
+
+  const handleCareCardClick = (catId: string) => {
+    const services = careServicesByCategory.get(catId) ?? []
+    const hasCheckedServices = services.some((s) => selectedCareServiceIds.includes(s.id))
+    if (!hasCheckedServices) return
+    setCollapsedCareCardIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(catId)) {
+        next.delete(catId)
+      } else {
+        next.add(catId)
+      }
+      return next
+    })
+  }
 
   const selectedCatCount = selectedCategoryIds.length
   const selectedSubCount = selectedSubcategoryIds.length
@@ -276,7 +271,7 @@ export const ProviderCategorySelector = ({
           </Text>
         </Column>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: theme.spacing(1.5), alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isNarrow ? '1fr' : '1fr 1fr', gap: theme.spacing(1.5), alignItems: 'start' }}>
           {filteredCategories.map((category) => {
             const isSelected = selectedCategoryIds.includes(category.id)
             const isExpanded = expandedCategoryId === category.id
@@ -380,79 +375,99 @@ export const ProviderCategorySelector = ({
         )}
       </Column>
 
-      {/* Section 2: Care Services — accordion, only when services are available */}
-      {availableCareServices.length > 0 && (
-        <Accordion defaultExpanded className={classes.accordion}>
-          <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
-            className={classes.accordionSummary}
-            style={{ backgroundColor: `${theme.palette.info.main}06` }}
-          >
-            <Row gap={1} alignItems="center">
-              <Text style={{ fontWeight: 600, fontSize: 14 }}>
+      {/* Section 2: Care Services — per-provider-type cards */}
+      {careServicesByCategory.size > 0 && (
+        <>
+          <Divider />
+          <Column gap={1.5}>
+            <Column gap={0.5}>
+              <Text style={{ fontWeight: 600, fontSize: 16 }}>
                 Care services
               </Text>
-              <Text style={{ fontSize: 13, color: theme.palette.grey[500] }}>
-                — What does this location provide?
+              <Text style={{ fontSize: 13, color: theme.palette.grey[600] }}>
+                Select the services each provider type offers
               </Text>
-              {selectedServiceCount > 0 && (
-                <span
-                  className={classes.badge}
-                  style={{ backgroundColor: theme.palette.info.main }}
-                >
-                  {selectedServiceCount}
-                </span>
-              )}
-            </Row>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Column gap={1} style={{ width: '100%' }}>
-              <div className={classes.careServiceContainer}>
-                <div className={classes.checkboxGrid} style={{ padding: theme.spacing(1, 2) }}>
-                  {availableCareServices.map((svc) => (
-                    <div key={svc.id} className={classes.checkboxItem}>
-                      <Checkbox
-                        label={svc.name}
-                        checked={selectedCareServiceIds.includes(svc.id)}
-                        onChange={(e) =>
-                          handleCareServiceToggle(svc.id, (e.target as HTMLInputElement).checked)
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {selectedServiceCount > 0 && (
-                <Row gap={1} style={{ flexWrap: 'wrap', paddingTop: theme.spacing(0.5) }}>
-                  {availableCareServices
-                    .filter((svc) => selectedCareServiceIds.includes(svc.id))
-                    .map((svc) => (
-                      <Chip
-                        key={svc.id}
-                        label={svc.name}
-                        size="small"
-                        onDelete={() => handleCareServiceToggle(svc.id, false)}
-                        style={{
-                          backgroundColor: `${theme.palette.info.main}15`,
-                          borderColor: `${theme.palette.info.main}40`,
-                          fontWeight: 500,
-                          fontSize: 12,
-                        }}
-                        variant="outlined"
-                      />
-                    ))}
-                </Row>
-              )}
-
-              {errors?.careServices && (
-                <Text style={{ color: theme.palette.error.main, fontSize: 13 }}>
-                  {errors.careServices}
-                </Text>
-              )}
             </Column>
-          </AccordionDetails>
-        </Accordion>
+
+            <div style={{ display: 'grid', gridTemplateColumns: isNarrow ? '1fr' : '1fr 1fr', gap: theme.spacing(1.5), alignItems: 'start' }}>
+              {Array.from(careServicesByCategory.entries()).map(([catId, services]) => {
+                const category = HEALTHCARE_PROVIDER_TYPES[catId]
+                if (!category) return null
+                const selectedServices = services.filter((s) => selectedCareServiceIds.includes(s.id))
+                const hasChecked = selectedServices.length > 0
+                const isCollapsed = collapsedCareCardIds.has(catId) && hasChecked
+                const isCardExpanded = !isCollapsed
+
+                return (
+                  <div
+                    key={catId}
+                    className={`${classes.categoryCard} ${classes.categoryCardSelected}`}
+                  >
+                    <div
+                      className={classes.careCardHeader}
+                      style={{ cursor: hasChecked ? 'pointer' : 'default' }}
+                      onClick={() => handleCareCardClick(catId)}
+                    >
+                      <Text style={{ fontWeight: 500, fontSize: 14, flex: 1 }}>
+                        Care Services: {category.name}
+                      </Text>
+                      {hasChecked && isCollapsed && (
+                        <EditOutlinedIcon className={classes.editIcon} />
+                      )}
+                      {hasChecked && isCardExpanded && (
+                        <KeyboardArrowUpIcon className={classes.editIcon} />
+                      )}
+                    </div>
+
+                    {isCollapsed && (
+                      <div className={classes.chipRow}>
+                        {selectedServices.map((svc) => (
+                          <Chip
+                            key={svc.id}
+                            label={svc.name}
+                            size="small"
+                            onDelete={() => handleCareServiceToggle(svc.id, false)}
+                            style={{
+                              backgroundColor: `${theme.palette.info.main}15`,
+                              borderColor: `${theme.palette.info.main}40`,
+                              fontWeight: 500,
+                              fontSize: 11,
+                            }}
+                            variant="outlined"
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    <Collapse in={isCardExpanded}>
+                      <div className={classes.subcategoryPanel}>
+                        <div className={classes.checkboxGrid}>
+                          {services.map((svc) => (
+                            <div key={svc.id} className={classes.checkboxItem}>
+                              <Checkbox
+                                label={svc.name}
+                                checked={selectedCareServiceIds.includes(svc.id)}
+                                onChange={(e) =>
+                                  handleCareServiceToggle(svc.id, (e.target as HTMLInputElement).checked)
+                                }
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </Collapse>
+                  </div>
+                )
+              })}
+            </div>
+
+            {errors?.careServices && (
+              <Text style={{ color: theme.palette.error.main, fontSize: 13 }}>
+                {errors.careServices}
+              </Text>
+            )}
+          </Column>
+        </>
       )}
 
       {/* Overall selection summary */}

@@ -1,5 +1,21 @@
 # Onboarding Module Changelog
 
+## 2026-02-19 — Care services card redesign
+
+### What was done
+- Replaced the single care services accordion with per-provider-type inline cards. One card per selected Healthcare Provider Type that has available services, titled "Care Services: [Provider Type Name]".
+- Cards are expanded by default and cannot collapse until at least one service is checked. Once collapsed, chips are shown with an edit icon to re-expand.
+- Care services scoped per card: category-level `careServices` plus selected subcategories' `careServices`. Duplicates across cards are expected when a service belongs to multiple provider types.
+- Fixed orphaned care service selections: deselecting a subcategory now also removes its care service IDs from the selection state.
+- Added responsive `sm` breakpoint to both provider type and care service grids — stacks to 1-column on phone-width screens.
+- Removed dead Accordion imports, unused `makeStyles` entries (`accordion`, `accordionSummary`, `badge`, `careServiceContainer`), and the flat `availableCareServices` memo.
+- Updated E2E test assertions and component documentation.
+
+### Decisions made
+- Used `collapsedCareCardIds: Set<string>` (starts empty = all expanded) instead of tracking expanded IDs, avoiding `useEffect` for auto-expand.
+- No click-outside behaviour for care cards — they are independent containers, not single-expand like category cards. Header click is sufficient.
+- Care card headers have no checkbox — they are passive containers that appear/disappear based on category selection.
+
 ## 2026-02-19 — Location form redesign
 
 ### What was done

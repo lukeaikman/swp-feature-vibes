@@ -70,7 +70,7 @@ Components created specifically for this module. Located in `src/pages/Onboardin
 
 **Props:** `locale`, `selectedCategoryIds`, `selectedSubcategoryIds`, `selectedCareServiceIds`, `onSelectionChange`, `errors`
 
-**What it renders:** Selectable category cards in a 2-column grid, accordion-based subcategory and care service sections with badge counts, removable Chip summaries, and an overall selection summary strip. All selection changes emit a single atomic `onSelectionChange` payload.
+**What it renders:** Two sections separated by a MUI Divider. Section 1: selectable category cards in a responsive 2-column grid (1-column on phone) with inline accordion subcategory panels, chips when collapsed, edit icons, and click-outside-to-close. Section 2: per-provider-type care service cards in the same grid layout — one card per selected category that has available services, titled "Care Services: [Provider Type Name]", expanded by default, collapsible only when services are checked. Both sections share an overall selection summary strip. All selection changes emit a single atomic `onSelectionChange` payload. Deselecting a subcategory also cleans up its orphaned care service IDs.
 
 **Integration notes:** Currently imports static reference data. Production should use React Query hook for provider types API.
 
