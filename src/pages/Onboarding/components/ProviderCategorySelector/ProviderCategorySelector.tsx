@@ -8,6 +8,7 @@ import {
   Collapse,
 } from '@material-ui/core'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
+import EditOutlinedIcon from '@material-ui/icons/EditOutlined'
 import { makeStyles, useTheme } from '@material-ui/core/styles'
 import { HEALTHCARE_PROVIDER_TYPES } from '../../../../data/healthcare-provider-types'
 import { mapLocaleToReferenceCode } from '../../../../entities/onboarding'
@@ -38,6 +39,15 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(1.5, 2),
     '& .MuiCheckbox-root': {
       marginRight: theme.spacing(1),
+    },
+  },
+  editIcon: {
+    marginLeft: 'auto',
+    fontSize: 16,
+    color: theme.palette.grey[400],
+    transition: 'color 0.2s ease',
+    '&:hover': {
+      color: theme.palette.brand.main,
     },
   },
   chipRow: {
@@ -266,7 +276,7 @@ export const ProviderCategorySelector = ({
           </Text>
         </Column>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: theme.spacing(1.5) }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: theme.spacing(1.5), alignItems: 'start' }}>
           {filteredCategories.map((category) => {
             const isSelected = selectedCategoryIds.includes(category.id)
             const isExpanded = expandedCategoryId === category.id
@@ -290,8 +300,19 @@ export const ProviderCategorySelector = ({
                       onChange={() => handleCategoryToggle(category.id)}
                     />
                   </div>
-                  <Text style={{ fontWeight: 500, fontSize: 14 }}>{category.name}</Text>
+                  <Text style={{ fontWeight: 500, fontSize: 14, flex: 1 }}>{category.name}</Text>
+                  {isSelected && !isExpanded && hasSubcategories && (
+                    <EditOutlinedIcon className={classes.editIcon} />
+                  )}
                 </div>
+
+                {isSelected && !isExpanded && hasSubcategories && selectedSubs.length === 0 && (
+                  <div className={classes.chipRow}>
+                    <Text style={{ fontSize: 12, color: theme.palette.grey[400], fontStyle: 'italic' }}>
+                      No subcategories selected
+                    </Text>
+                  </div>
+                )}
 
                 {isSelected && !isExpanded && selectedSubs.length > 0 && (
                   <div className={classes.chipRow}>
