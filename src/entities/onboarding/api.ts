@@ -1,71 +1,73 @@
 import axios from 'axios'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { IOrganisation, IPerson, ILocation } from './types'
+import type { IClient } from '../../types'
+import type { IUser } from '../../types'
+import type { ILocation } from './types'
 
 // ─── Query keys ───
 
-export const ORGANISATIONS_QUERY = 'organisations'
-export const PEOPLE_QUERY = 'people'
+export const CLIENTS_QUERY = 'clients'
+export const USERS_QUERY = 'users'
 export const LOCATIONS_QUERY = 'locations'
 
-// ─── Organisation hooks ───
+// ─── Client (organisation) hooks ───
 
-export const useGetOrganisation = (id: string) =>
+export const useGetClient = (id: string) =>
   useQuery({
-    queryKey: [ORGANISATIONS_QUERY, id],
+    queryKey: [CLIENTS_QUERY, id],
     queryFn: async () => {
-      const { data } = await axios.get<IOrganisation>(`/api/onboarding/organisations/${id}`)
+      const { data } = await axios.get<IClient>(`/api/onboarding/clients/${id}`)
       return data
     },
     enabled: !!id,
   })
 
-export const useCreateOrganisation = () => {
+export const useCreateClient = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (body: Partial<IOrganisation>) => {
-      const { data } = await axios.post<IOrganisation>('/api/onboarding/organisations', body)
+    mutationFn: async (body: Partial<IClient>) => {
+      const { data } = await axios.post<IClient>('/api/onboarding/clients', body)
       return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [ORGANISATIONS_QUERY] })
+      queryClient.invalidateQueries({ queryKey: [CLIENTS_QUERY] })
     },
   })
 }
 
-export const useUpdateOrganisation = () => {
+export const useUpdateClient = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...body }: Partial<IOrganisation> & { id: string }) => {
-      const { data } = await axios.put<IOrganisation>(`/api/onboarding/organisations/${id}`, body)
+    mutationFn: async ({ id, ...body }: Partial<IClient> & { id: string }) => {
+      const { data } = await axios.put<IClient>(`/api/onboarding/clients/${id}`, body)
       return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [ORGANISATIONS_QUERY] })
+      queryClient.invalidateQueries({ queryKey: [CLIENTS_QUERY] })
     },
   })
 }
 
-// ─── Person hooks ───
+// ─── User hooks ───
 
-export const useGetPeople = () =>
+export const useGetUsers = () =>
   useQuery({
-    queryKey: [PEOPLE_QUERY],
+    queryKey: [USERS_QUERY],
     queryFn: async () => {
-      const { data } = await axios.get<IPerson[]>('/api/onboarding/people')
+      const { data } = await axios.get<IUser[]>('/api/onboarding/users')
       return data
     },
   })
 
-export const useCreatePerson = () => {
+export const useCreateUser = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (body: Partial<IPerson>) => {
-      const { data } = await axios.post<IPerson>('/api/onboarding/people', body)
+    mutationFn: async (body: Partial<IUser>) => {
+      const { data } = await axios.post<IUser>('/api/onboarding/users', body)
       return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PEOPLE_QUERY] })
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY] })
     },
   })
 }

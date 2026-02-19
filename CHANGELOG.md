@@ -1,5 +1,35 @@
 # Onboarding Module Changelog
 
+## 2026-02-19 — Type alignment with production entities
+
+### What was done
+- Replaced `IPerson` and `IOrganisation` types with production `IUser` and `IClient` (extended with new optional fields)
+- Copied production `IAddress` to `src/types/address.ts` with minor optionality changes (addressLine2, city, state made optional)
+- Added `phone?: string` to `IUser` in `src/types/user.ts`
+- Added `organisation_name`, `phone`, `address`, `organisationUrl`, `primaryContactId`, `isDeleted`, `_meta` to `IClient` in `src/types/client.ts`
+- Removed `IPerson`, `PersonRole`, `IOrganisation`, and duplicate `IAddress` from `src/entities/onboarding/types.ts`
+- Renamed API endpoints: `/api/onboarding/organisations` to `/api/onboarding/clients`, `/api/onboarding/people` to `/api/onboarding/users`
+- Renamed API hooks: `useCreateOrganisation` to `useCreateClient`, `useCreatePerson` to `useCreateUser`, etc.
+- Updated mock data: `onboarding_organisations` collection renamed to `onboarding_clients`, `onboarding_people` to `onboarding_users`
+- Aligned field names: `organisationName` to `organisation_name`, `phoneNumber` to `phone`, `countyOrState` to `state`, `postcode` to `zipCode`
+- Updated all 5 page components to use new types and field mappings
+- Updated E2E tests with new endpoint URLs and payload shape assertions
+- Updated all documentation files
+
+### Decisions made
+- Use production `IAddress` as-is — UK postcodes go in `zipCode`, counties go in `state`. No locale-specific field naming.
+- Primary contacts get `roles: [Roles.ADMIN]`, team members get `roles: [Roles.USER]`. The old `role: 'primary_contact'` string is dropped — that relationship is expressed by `IClient.primaryContactId`.
+- `ILocation` stays in onboarding types — no production equivalent exists. The old `LocationData` in `LocationSettingsPage.tsx` is a completely different shape.
+- All new fields on `IUser` and `IClient` are optional so existing code is unaffected.
+
+### Integration notes
+- `IUser.phone` and all new `IClient` fields need to be added to the production type definitions and backend schemas (ElectroDB entities)
+- `IAddress` in `src/types/address.ts` has `addressLine2`, `city`, `state` made optional. Production `IAddress` has these required. Integration team decides which to keep.
+- API paths changed from `/organisations` + `/people` to `/clients` + `/users`. Backend routing will need to match.
+- Mock data field names now match production conventions (`state`/`zipCode` instead of `countyOrState`/`postcode`)
+
+---
+
 ## 2026-02-18 — Initial onboarding wizard implementation
 
 ### What was done

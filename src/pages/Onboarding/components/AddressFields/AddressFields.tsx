@@ -1,7 +1,7 @@
 import React from 'react'
 import { Input, Select } from '@UI'
 import { COUNTRY_GROUPS } from '../../../../entities/onboarding'
-import type { IAddress } from '../../../../entities/onboarding'
+import type { IAddress } from '../../../../types'
 
 interface AddressFieldsProps {
   address: Partial<IAddress>
@@ -22,12 +22,11 @@ export const AddressFields = ({ address, onChange, errors }: AddressFieldsProps)
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Row 1: Address Line 1 (full width, keep label) */}
       <Input
-        label="Address Line 1"
+        label="Address Line 1 *"
         fullWidth
         value={address.addressLine1 ?? ''}
         onChange={(e) => update('addressLine1', (e.target as HTMLInputElement).value)}
         errors={errors?.addressLine1 ? [errors.addressLine1] : undefined}
-        required
       />
 
       {/* Row 2: Address Line 2 (full width, placeholder only) */}
@@ -49,29 +48,27 @@ export const AddressFields = ({ address, onChange, errors }: AddressFieldsProps)
         <Input
           fullWidth
           placeholder="County / State"
-          value={address.countyOrState ?? ''}
-          onChange={(e) => update('countyOrState', (e.target as HTMLInputElement).value)}
+          value={address.state ?? ''}
+          onChange={(e) => update('state', (e.target as HTMLInputElement).value)}
         />
       </div>
 
       {/* Row 4: Postcode | Country (2-up) */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <Input
-          label="Postcode"
+          label="Postcode *"
           fullWidth
-          value={address.postcode ?? ''}
-          onChange={(e) => update('postcode', (e.target as HTMLInputElement).value)}
-          errors={errors?.postcode ? [errors.postcode] : undefined}
-          required
+          value={address.zipCode ?? ''}
+          onChange={(e) => update('zipCode', (e.target as HTMLInputElement).value)}
+          errors={errors?.zipCode ? [errors.zipCode] : undefined}
         />
         <Select
-          label="Country"
+          label="Country *"
           value={address.country ?? ''}
           items={countryItems}
           onChange={(value) => update('country', value)}
           emptyLabel="Select a country"
           errors={errors?.country ? [errors.country] : undefined}
-          required
         />
       </div>
     </div>

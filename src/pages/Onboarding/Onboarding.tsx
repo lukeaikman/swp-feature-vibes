@@ -3,66 +3,64 @@ import { useNavigate } from 'react-router-dom'
 import { PageContainer, ContentBox, Text } from '@UI'
 import { ROUTES } from '../../app/routes'
 import {
-  useCreateOrganisation,
-  useUpdateOrganisation,
-  useCreatePerson,
+  useCreateClient,
+  useUpdateClient,
+  useCreateUser,
   useCreateLocation,
   mapCountryToLocale,
 } from '../../entities/onboarding'
-import type { IOrganisation, IPerson, ILocation } from '../../entities/onboarding'
+import type { ILocation } from '../../entities/onboarding'
+import type { IClient, IUser } from '../../types'
+import { Roles } from '../../types'
 import { OrganisationStep } from './components/OrganisationStep'
 import { LocationStep } from './components/LocationStep'
 
 const Onboarding = () => {
   const navigate = useNavigate()
 
-  const [step, setStep] = useState<1 | 2>(1)
+  // TODO: Remove hardcoded step/IDs after testing — revert to step 1, null IDs
+  const [step, setStep] = useState<1 | 2>(2)
 
-  // Organisation state
-  const [orgData, setOrgData] = useState<Partial<IOrganisation>>({})
-  const [primaryContact, setPrimaryContact] = useState<Partial<IPerson>>({})
+  const [orgData, setOrgData] = useState<Partial<IClient>>({})
+  const [primaryContact, setPrimaryContact] = useState<Partial<IUser>>({})
 
-  // Track whether org/contact have been persisted (for back → next using PUT vs POST)
-  const [persistedOrgId, setPersistedOrgId] = useState<string | null>(null)
-  const [persistedContactId, setPersistedContactId] = useState<string | null>(null)
+  const [persistedOrgId, setPersistedOrgId] = useState<string | null>('org-001')
+  const [persistedContactId, setPersistedContactId] = useState<string | null>('person-001')
 
-  // Locations state
   const [locations, setLocations] = useState<Partial<ILocation>[]>([{}])
 
-  // People created during onboarding (for key contact dropdown)
-  const [people, setPeople] = useState<IPerson[]>([])
+  const [people, setPeople] = useState<IUser[]>([])
 
-  // Feedback
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  // Mutations
-  const createOrg = useCreateOrganisation()
-  const updateOrg = useUpdateOrganisation()
-  const createPerson = useCreatePerson()
+  const createClient = useCreateClient()
+  const updateClient = useUpdateClient()
+  const createUser = useCreateUser()
   const createLocation = useCreateLocation()
 
-  const handleStep1Next = async () => {
+  const handleStep1Next = async (org: Partial<IClient>, contact: Partial<IUser>) => {
     setFeedback(null)
     setIsSubmitting(true)
 
     try {
       let personId = persistedContactId
       if (!personId) {
-        const person = await createPerson.mutateAsync({
-          ...primaryContact,
-          role: 'primary_contact',
-          createdAt: new Date().toISOString(),
+        const person = await createUser.mutateAsync({
+          ...contact,
+          roles: [Roles.ADMIN],
+          language: 'en',
+          isDeleted: false,
         })
         personId = person.id
         setPersistedContactId(person.id)
-        setPeople((prev) => [...prev, person])
+        setPeople((prev) => [...prev, person as IUser])
       }
 
       let orgId = persistedOrgId
-      const orgPayload = {
-        ...orgData,
+      const orgPayload: Partial<IClient> = {
+        ...org,
         primaryContactId: personId,
         isDeleted: false,
         _meta: {
@@ -74,11 +72,11 @@ const Onboarding = () => {
       }
 
       if (orgId) {
-        await updateOrg.mutateAsync({ id: orgId, ...orgPayload })
+        await updateClient.mutateAsync({ id: orgId, ...orgPayload })
       } else {
-        const org = await createOrg.mutateAsync(orgPayload)
-        orgId = org.id
-        setPersistedOrgId(org.id)
+        const created = await createClient.mutateAsync(orgPayload)
+        orgId = (created as { id: string }).id
+        setPersistedOrgId(orgId)
       }
 
       setOrgData((prev) => ({ ...prev, primaryContactId: personId! }))

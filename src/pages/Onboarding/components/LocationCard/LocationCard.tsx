@@ -9,7 +9,8 @@ import {
   createEmptyAddress,
   COUNTRY_GROUPS,
 } from '../../../../entities/onboarding'
-import type { ILocation, IPerson, IAddress, AppLocale } from '../../../../entities/onboarding'
+import type { ILocation, AppLocale } from '../../../../entities/onboarding'
+import type { IUser, IAddress } from '../../../../types'
 
 const countryItems = COUNTRY_GROUPS.flatMap((group) =>
   group.options.map((opt) => ({ value: opt.value, label: opt.label }))
@@ -21,7 +22,7 @@ interface LocationCardProps {
   isExpanded: boolean
   isCollapsible: boolean
   canRemove: boolean
-  people: IPerson[]
+  people: IUser[]
   orgAddress?: Partial<IAddress>
   orgUrl?: string
   orgPrimaryContactId?: string
@@ -29,7 +30,7 @@ interface LocationCardProps {
   onToggle: () => void
   onChange: (location: Partial<ILocation>) => void
   onRemove: () => void
-  onPersonCreated: (person: IPerson) => void
+  onPersonCreated: (person: IUser) => void
 }
 
 const ADD_PERSON_VALUE = '__ADD_NEW_PERSON__'
@@ -83,7 +84,7 @@ export const LocationCard = ({
     onChange({ ...location, keyContactId: value || undefined })
   }
 
-  const handlePersonCreated = (person: IPerson) => {
+  const handlePersonCreated = (person: IUser) => {
     onPersonCreated(person)
     onChange({ ...location, keyContactId: person.id })
   }
@@ -166,13 +167,12 @@ export const LocationCard = ({
           {/* Row: Location Name | Location URL */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <Input
-              label="Location Name"
+              label="Location Name *"
               fullWidth
               value={location.locationName ?? ''}
               onChange={(e) =>
                 onChange({ ...location, locationName: (e.target as HTMLInputElement).value })
               }
-              required
             />
             <Input
               label="Location URL"
@@ -182,7 +182,6 @@ export const LocationCard = ({
               onChange={(e) =>
                 onChange({ ...location, locationUrl: (e.target as HTMLInputElement).value })
               }
-              helperText="Optional"
             />
           </div>
 
@@ -198,12 +197,11 @@ export const LocationCard = ({
           {/* Row: Country of Operation | Key Contact */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <Select
-              label="Country of Operation"
+              label="Country of Operation *"
               value={location.countryOfOperation ?? ''}
               items={countryItems}
               onChange={handleCountryChange}
               emptyLabel="Select a country"
-              required
             />
             <Select
               label="Key Contact"

@@ -3,6 +3,8 @@
 // Integration: verify these match production before merging
 // This file is for reference only — the isolated module doesn't call useGetClient().
 
+import type { IAddress } from './address'
+
 export type TClientName =
   | 'manual'
   | 'amazon'
@@ -68,5 +70,17 @@ export interface IClient {
     googleSSO?: boolean
     intervention?: boolean
     reportCustomFields?: boolean
+  }
+  organisation_name?: string   // NEW — display name for the organisation
+  phone?: string               // NEW — organisation phone number
+  address?: IAddress           // NEW — organisation headquarters address
+  organisationUrl?: string     // NEW — company website URL (distinct from tenant domain)
+  primaryContactId?: string    // NEW — FK to User who is primary contact
+  isDeleted?: boolean          // NEW — soft-delete flag
+  _meta?: {                    // NEW — audit timestamps
+    created_at: string
+    updated_at: string
+    created_by: string
+    updated_by: string
   }
 }

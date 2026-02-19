@@ -25,6 +25,7 @@ export interface IUser {
   language: string
   firstName: string
   lastName?: string
+  phone?: string // NEW — to be added to API User entity for onboarding
   country?: string
   automaticTimeZoneEnabled?: boolean
   notificationsEnabled?: boolean

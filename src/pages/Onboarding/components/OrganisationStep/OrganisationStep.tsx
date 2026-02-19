@@ -3,14 +3,14 @@ import { useForm } from '@tanstack/react-form'
 import { ContentBox, Input, Button, Text } from '@UI'
 import { AddressFields } from '../AddressFields'
 import { createEmptyAddress } from '../../../../entities/onboarding'
-import type { IOrganisation, IPerson, IAddress } from '../../../../entities/onboarding'
+import type { IClient, IUser, IAddress } from '../../../../types'
 
 interface OrganisationStepProps {
-  orgData: Partial<IOrganisation>
-  primaryContact: Partial<IPerson>
-  onOrgChange: (data: Partial<IOrganisation>) => void
-  onContactChange: (data: Partial<IPerson>) => void
-  onNext: () => void
+  orgData: Partial<IClient>
+  primaryContact: Partial<IUser>
+  onOrgChange: (data: Partial<IClient>) => void
+  onContactChange: (data: Partial<IUser>) => void
+  onNext: (org: Partial<IClient>, contact: Partial<IUser>) => void
 }
 
 export const OrganisationStep = ({
@@ -21,6 +21,8 @@ export const OrganisationStep = ({
   onNext,
 }: OrganisationStepProps) => {
   const [touched, setTouched] = useState<Set<string>>(new Set())
+  const [submitted, setSubmitted] = useState(false)
+  const [addressErrors, setAddressErrors] = useState<Record<string, string>>({})
   const markTouched = useCallback((name: string) => {
     setTouched((prev) => {
       if (prev.has(name)) return prev
@@ -32,32 +34,40 @@ export const OrganisationStep = ({
 
   const form = useForm({
     defaultValues: {
-      organisationName: orgData.organisationName ?? '',
+      organisationName: orgData.organisation_name ?? '',
       contactFirstName: primaryContact.firstName ?? '',
       contactLastName: primaryContact.lastName ?? '',
       contactEmail: primaryContact.email ?? '',
-      contactPhone: primaryContact.phoneNumber ?? '',
+      contactPhone: primaryContact.phone ?? '',
       address: (orgData.address ?? createEmptyAddress()) as IAddress,
-      phoneNumber: orgData.phoneNumber ?? '',
+      phoneNumber: orgData.phone ?? '',
       organisationUrl: orgData.organisationUrl ?? '',
     },
     onSubmit: async ({ value }) => {
-      onOrgChange({
+      const addrErr: Record<string, string> = {}
+      if (!value.address.addressLine1?.trim()) addrErr.addressLine1 = 'Address line 1 is required'
+      if (!value.address.zipCode?.trim()) addrErr.zipCode = 'Postcode is required'
+      if (!value.address.country?.trim()) addrErr.country = 'Country is required'
+      setAddressErrors(addrErr)
+      if (Object.keys(addrErr).length > 0) return
+
+      const org: Partial<IClient> = {
         ...orgData,
-        organisationName: value.organisationName,
+        organisation_name: value.organisationName,
         address: value.address,
-        phoneNumber: value.phoneNumber,
+        phone: value.phoneNumber,
         organisationUrl: value.organisationUrl || undefined,
-      })
-      onContactChange({
+      }
+      const contact: Partial<IUser> = {
         ...primaryContact,
         firstName: value.contactFirstName,
         lastName: value.contactLastName,
         email: value.contactEmail,
-        phoneNumber: value.contactPhone,
-        role: 'primary_contact',
-      })
-      onNext()
+        phone: value.contactPhone,
+      }
+      onOrgChange(org)
+      onContactChange(contact)
+      onNext(org, contact)
     },
   })
 
@@ -66,6 +76,17 @@ export const OrganisationStep = ({
       onSubmit={(e) => {
         e.preventDefault()
         e.stopPropagation()
+        setSubmitted(true)
+        setTouched(new Set([
+          'organisationName', 'phoneNumber', 'organisationUrl',
+          'contactFirstName', 'contactLastName', 'contactEmail', 'contactPhone',
+        ]))
+        const addr = form.getFieldValue('address')
+        const addrErr: Record<string, string> = {}
+        if (!addr.addressLine1?.trim()) addrErr.addressLine1 = 'Address line 1 is required'
+        if (!addr.zipCode?.trim()) addrErr.zipCode = 'Postcode is required'
+        if (!addr.country?.trim()) addrErr.country = 'Country is required'
+        setAddressErrors(addrErr)
         form.handleSubmit()
       }}
     >
@@ -88,13 +109,12 @@ export const OrganisationStep = ({
               }}
               children={(field) => (
                 <Input
-                  label="Organisation Name"
+                  label="Organisation Name *"
                   fullWidth
                   value={field.state.value}
                   onChange={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                   onBlur={() => markTouched(field.name)}
-                  errors={touched.has(field.name) ? field.state.meta.errors : undefined}
-                  required
+                  errors={(touched.has(field.name) || submitted) ? field.state.meta.errors : undefined}
                 />
               )}
             />
@@ -114,8 +134,7 @@ export const OrganisationStep = ({
                   value={field.state.value}
                   onChange={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                   onBlur={() => markTouched(field.name)}
-                  errors={touched.has(field.name) ? field.state.meta.errors : undefined}
-                  helperText="Optional"
+                  errors={(touched.has(field.name) || submitted) ? field.state.meta.errors : undefined}
                 />
               )}
             />
@@ -129,14 +148,13 @@ export const OrganisationStep = ({
             }}
             children={(field) => (
               <Input
-                label="Organisation Phone Number"
+                label="Organisation Phone Number *"
                 type="tel"
                 fullWidth
                 value={field.state.value}
                 onChange={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                 onBlur={() => markTouched(field.name)}
-                errors={touched.has(field.name) ? field.state.meta.errors : undefined}
-                required
+                errors={(touched.has(field.name) || submitted) ? field.state.meta.errors : undefined}
               />
             )}
           />
@@ -152,13 +170,12 @@ export const OrganisationStep = ({
               }}
               children={(field) => (
                 <Input
-                  label="First Name"
+                  label="First Name *"
                   fullWidth
                   value={field.state.value}
                   onChange={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                   onBlur={() => markTouched(field.name)}
-                  errors={touched.has(field.name) ? field.state.meta.errors : undefined}
-                  required
+                  errors={(touched.has(field.name) || submitted) ? field.state.meta.errors : undefined}
                 />
               )}
             />
@@ -169,13 +186,12 @@ export const OrganisationStep = ({
               }}
               children={(field) => (
                 <Input
-                  label="Last Name"
+                  label="Last Name *"
                   fullWidth
                   value={field.state.value}
                   onChange={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                   onBlur={() => markTouched(field.name)}
-                  errors={touched.has(field.name) ? field.state.meta.errors : undefined}
-                  required
+                  errors={(touched.has(field.name) || submitted) ? field.state.meta.errors : undefined}
                 />
               )}
             />
@@ -194,14 +210,13 @@ export const OrganisationStep = ({
               }}
               children={(field) => (
                 <Input
-                  label="Email"
+                  label="Email *"
                   type="email"
                   fullWidth
                   value={field.state.value}
                   onChange={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                   onBlur={() => markTouched(field.name)}
-                  errors={touched.has(field.name) ? field.state.meta.errors : undefined}
-                  required
+                  errors={(touched.has(field.name) || submitted) ? field.state.meta.errors : undefined}
                 />
               )}
             />
@@ -212,14 +227,13 @@ export const OrganisationStep = ({
               }}
               children={(field) => (
                 <Input
-                  label="Phone Number"
+                  label="Phone Number *"
                   type="tel"
                   fullWidth
                   value={field.state.value}
                   onChange={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                   onBlur={() => markTouched(field.name)}
-                  errors={touched.has(field.name) ? field.state.meta.errors : undefined}
-                  required
+                  errors={(touched.has(field.name) || submitted) ? field.state.meta.errors : undefined}
                 />
               )}
             />
@@ -232,7 +246,11 @@ export const OrganisationStep = ({
             children={(field) => (
               <AddressFields
                 address={field.state.value}
-                onChange={(addr) => field.handleChange({ ...field.state.value, ...addr } as IAddress)}
+                onChange={(addr) => {
+                  field.handleChange({ ...field.state.value, ...addr } as IAddress)
+                  if (Object.keys(addressErrors).length) setAddressErrors({})
+                }}
+                errors={submitted ? addressErrors : undefined}
               />
             )}
           />

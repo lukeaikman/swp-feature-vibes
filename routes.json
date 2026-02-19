@@ -1,5 +1,5 @@
 {
-  "/api/onboarding/organisations*": "/onboarding_organisations$1",
-  "/api/onboarding/people*": "/onboarding_people$1",
+  "/api/onboarding/clients*": "/onboarding_clients$1",
+  "/api/onboarding/users*": "/onboarding_users$1",
   "/api/onboarding/locations*": "/onboarding_locations$1"
 }

@@ -25,9 +25,11 @@ Components created specifically for this module. Located in `src/pages/Onboardin
 
 **Purpose:** Step 1 form — collects organisation name, primary contact, address, phone, and URL.
 
-**Props:** `orgData`, `primaryContact`, `onOrgChange`, `onContactChange`, `onNext`
+**Props:** `orgData: Partial<IClient>`, `primaryContact: Partial<IUser>`, `onOrgChange`, `onContactChange`, `onNext`
 
 **What it renders:** A single ContentBox with all organisation fields using `@tanstack/react-form` for validation.
+
+**Type mapping:** Form field `organisationName` maps to `IClient.organisation_name`, form `phoneNumber` maps to `IClient.phone`, form `contactPhone` maps to `IUser.phone`. Address fields use production `IAddress` naming (`state`, `zipCode`).
 
 **Dependencies:** `@tanstack/react-form`
 
@@ -71,11 +73,13 @@ Components created specifically for this module. Located in `src/pages/Onboardin
 
 ### AddPersonDialog (`src/pages/Onboarding/components/AddPersonDialog/`)
 
-**Purpose:** Modal to create a new person inline during onboarding.
+**Purpose:** Modal to create a new user inline during onboarding.
 
-**Props:** `isOpen`, `onClose`, `onPersonCreated`
+**Props:** `isOpen`, `onClose`, `onPersonCreated: (person: IUser) => void`
 
 **What it renders:** Modal with first name, last name, email, phone fields and save/cancel actions.
+
+**Type mapping:** Posts to `/api/onboarding/users` via `useCreateUser()`. Sends `phone` (not `phoneNumber`), `roles: [Roles.USER]`, `language: 'en'`, `isDeleted: false`.
 
 ## Issues Encountered with @UI Components
 

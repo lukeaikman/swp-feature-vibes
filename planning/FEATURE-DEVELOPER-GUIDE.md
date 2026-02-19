@@ -752,12 +752,12 @@ Add your module's entities as you build them.
 
 ```json
 {
-  "/api/audit/templates*": "/audit_templates$1",
-  "/api/audit/schedules*": "/audit_schedules$1"
+  "/api/audit/templates*": "/api/audit_templates$1",
+  "/api/audit/schedules*": "/api/audit_schedules$1"
 }
 ```
 
-The rewrite strips the `/api` prefix because json-server serves resources at the root (`/audit_templates`), not under `/api`. The Vite proxy forwards the full path to json-server, so the rewrite target must match json-server's actual resource paths. Without this, Axios calls to `/api/audit/templates` will 404.
+Without this, Axios calls to `/api/audit/templates` will 404. The rewrite maps them to the flat key in `db.json`.
 
 3. json-server immediately serves full CRUD on the new entity. No restart needed (it watches the file).
 
@@ -1131,96 +1131,6 @@ const MyForm = () => {
 
 ---
 
-## How to Write E2E Tests
-
-The project includes [Playwright](https://playwright.dev/) for end-to-end testing. Tests run against the real dev server (Vite + json-server), not mocked fetch calls — they catch routing bugs, API 404s, form validation issues, and broken UI in a real browser.
-
-### Start with Codegen
-
-The fastest way to write a test is to let Playwright record your clicks:
-
-```bash
-npm run test:e2e:codegen
-```
-
-This opens a browser at `http://localhost:4000`. Click through your feature. Playwright generates the test code. Copy it into a test file and refine.
-
-**This is the highest-leverage tool available.** Use it before writing tests by hand.
-
-### Running Tests
-
-```bash
-# Run all tests headless
-npm run test:e2e
-
-# Run with Playwright's interactive UI (inspect failures, see traces)
-npm run test:e2e:ui
-```
-
-Tests auto-start the dev server via the `webServer` block in `playwright.config.ts`. You don't need `npm run dev` running separately (but if it's already running, Playwright reuses it).
-
-### File Naming
-
-Place test files in the `e2e/` directory:
-
-```
-e2e/
-├── [feature-name].spec.ts    # One file per feature
-├── onboarding.spec.ts         # Example
-└── audit-templates.spec.ts    # Example
-```
-
-### Test Skeleton
-
-Copy this template to start a new test file:
-
-```typescript
-import { test, expect } from '@playwright/test'
-
-test.describe('[Feature Name]', () => {
-  test('page loads', async ({ page }) => {
-    await page.goto('/your-route')
-    await expect(page.locator('text=Page Title')).toBeVisible()
-  })
-
-  test('form validation shows on blur, not on load', async ({ page }) => {
-    await page.goto('/your-route')
-    await expect(page.locator('text=Field is required')).not.toBeVisible()
-    const input = page.locator('input[name="fieldName"]')
-    await input.focus()
-    await input.blur()
-    await expect(page.locator('text=Field is required')).toBeVisible()
-  })
-
-  test('form submit succeeds', async ({ page }) => {
-    await page.goto('/your-route')
-    await page.fill('input[name="fieldName"]', 'Test Value')
-    await page.click('button:has-text("Save")')
-    await expect(page.locator('text=Success')).toBeVisible()
-  })
-})
-```
-
-### What to Test
-
-For each feature, cover:
-
-1. **Page loads** — navigate to the route, verify the heading/content renders
-2. **Validation** — confirm errors don't appear on load, do appear after blur/submit
-3. **Happy path** — fill forms, click through wizards, verify success
-4. **API integration** — confirm json-server receives the right requests (no 404s)
-5. **Error states** — verify error feedback displays when mutations fail
-
-### Patterns
-
-- Use `page.goto('/route')` with relative paths — the base URL is configured in `playwright.config.ts`
-- Use `page.fill()` for inputs (clears and types), `page.click()` for buttons
-- Use `page.locator('text=...')` to find elements by visible text
-- Use `expect(locator).toBeVisible()` / `not.toBeVisible()` for assertions
-- Tests run against the live json-server, not mocked data — your `db.json` seed data must support the test scenarios
-
----
-
 ## Installing New Dependencies
 
 If you need a package that's not in the template's `package.json`:
@@ -1267,11 +1177,6 @@ Before marking your module as complete:
 - [ ] All CRUD operations work against json-server
 - [ ] Forms validate required fields
 
-### E2E Tests
-- [ ] `e2e/[feature].spec.ts` exists with tests for all user flows
-- [ ] `npm run test:e2e` passes with no failures
-- [ ] Tests cover: page loads, form validation, happy path submission, error states
-
 ---
 
 ## Quick Reference
@@ -1295,6 +1200,4 @@ Before marking your module as complete:
 | Document a decision | Add to `CHANGELOG.md` |
 | Document an API call | Add to `API-CONTRACT.md` with full field specs |
 | Document component usage | Add to `COMPONENT-LOG.md` |
-| Write E2E tests for a feature | Use codegen (`npm run test:e2e:codegen`), or copy the [test skeleton](#test-skeleton) into `e2e/[feature].spec.ts` |
-| Run E2E tests | `npm run test:e2e` (headless) or `npm run test:e2e:ui` (interactive) |
 | Fix "Failed to resolve import" on startup | Barrel export issue — see README troubleshooting section. Add a shim or install the missing package |

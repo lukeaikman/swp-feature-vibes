@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
 import { Modal, Input, Button, Text } from '@UI'
-import { useCreatePerson } from '../../../../entities/onboarding'
-import type { IPerson } from '../../../../entities/onboarding'
+import { useCreateUser } from '../../../../entities/onboarding'
+import type { IUser } from '../../../../types'
+import { Roles } from '../../../../types'
 
 interface AddPersonDialogProps {
   isOpen: boolean
   onClose: () => void
-  onPersonCreated: (person: IPerson) => void
+  onPersonCreated: (person: IUser) => void
 }
 
 export const AddPersonDialog = ({ isOpen, onClose, onPersonCreated }: AddPersonDialogProps) => {
@@ -16,7 +17,7 @@ export const AddPersonDialog = ({ isOpen, onClose, onPersonCreated }: AddPersonD
   const [phoneNumber, setPhoneNumber] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const createPerson = useCreatePerson()
+  const createUser = useCreateUser()
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -33,15 +34,16 @@ export const AddPersonDialog = ({ isOpen, onClose, onPersonCreated }: AddPersonD
     if (!validate()) return
 
     try {
-      const person = await createPerson.mutateAsync({
+      const person = await createUser.mutateAsync({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
-        phoneNumber: phoneNumber.trim(),
-        role: 'team_member',
-        createdAt: new Date().toISOString(),
+        phone: phoneNumber.trim(),
+        roles: [Roles.USER],
+        language: 'en',
+        isDeleted: false,
       })
-      onPersonCreated(person)
+      onPersonCreated(person as IUser)
       resetForm()
       onClose()
     } catch {
@@ -67,40 +69,36 @@ export const AddPersonDialog = ({ isOpen, onClose, onPersonCreated }: AddPersonD
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 500 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <Input
-            label="First Name"
+            label="First Name *"
             fullWidth
             value={firstName}
             onChange={(e) => setFirstName((e.target as HTMLInputElement).value)}
             errors={errors.firstName ? [errors.firstName] : undefined}
-            required
           />
           <Input
-            label="Last Name"
+            label="Last Name *"
             fullWidth
             value={lastName}
             onChange={(e) => setLastName((e.target as HTMLInputElement).value)}
             errors={errors.lastName ? [errors.lastName] : undefined}
-            required
           />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <Input
-            label="Email"
+            label="Email *"
             type="email"
             fullWidth
             value={email}
             onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
             errors={errors.email ? [errors.email] : undefined}
-            required
           />
           <Input
-            label="Phone Number"
+            label="Phone Number *"
             type="tel"
             fullWidth
             value={phoneNumber}
             onChange={(e) => setPhoneNumber((e.target as HTMLInputElement).value)}
             errors={errors.phoneNumber ? [errors.phoneNumber] : undefined}
-            required
           />
         </div>
 
@@ -110,8 +108,8 @@ export const AddPersonDialog = ({ isOpen, onClose, onPersonCreated }: AddPersonD
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={createPerson.isPending}>
-            {createPerson.isPending ? 'Saving...' : 'Add Person'}
+          <Button onClick={handleSubmit} disabled={createUser.isPending}>
+            {createUser.isPending ? 'Saving...' : 'Add Person'}
           </Button>
         </div>
       </div>

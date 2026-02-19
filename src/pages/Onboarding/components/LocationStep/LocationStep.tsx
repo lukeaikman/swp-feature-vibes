@@ -1,15 +1,16 @@
 import React, { useState } from 'react'
 import { Button, Text } from '@UI'
 import { LocationCard } from '../LocationCard'
-import type { IOrganisation, IPerson, ILocation } from '../../../../entities/onboarding'
+import type { ILocation } from '../../../../entities/onboarding'
+import type { IClient, IUser } from '../../../../types'
 
 interface LocationStepProps {
-  orgData: Partial<IOrganisation>
-  primaryContact: Partial<IPerson>
+  orgData: Partial<IClient>
+  primaryContact: Partial<IUser>
   locations: Partial<ILocation>[]
-  people: IPerson[]
+  people: IUser[]
   onLocationsChange: (locations: Partial<ILocation>[]) => void
-  onPeopleChange: (people: IPerson[]) => void
+  onPeopleChange: (people: IUser[]) => void
   onBack: () => void
   onComplete: () => void
   isSubmitting: boolean
@@ -53,7 +54,7 @@ export const LocationStep = ({
     onLocationsChange(newLocations)
   }
 
-  const handlePersonCreated = (person: IPerson) => {
+  const handlePersonCreated = (person: IUser) => {
     onPeopleChange([...people, person])
   }
 
@@ -65,7 +66,7 @@ export const LocationStep = ({
       const locErrors: string[] = []
       if (!loc.locationName?.trim()) locErrors.push('Location name is required')
       if (!loc.address?.addressLine1?.trim()) locErrors.push('Address line 1 is required')
-      if (!loc.address?.postcode?.trim()) locErrors.push('Postcode is required')
+      if (!loc.address?.zipCode?.trim()) locErrors.push('Postcode is required')
       if (!loc.countryOfOperation) locErrors.push('Country of operation is required')
       if (!loc.selectedProviderCategoryIds?.length) locErrors.push('At least one provider category is required')
 

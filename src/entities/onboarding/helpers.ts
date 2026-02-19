@@ -1,4 +1,5 @@
-import type { AppLocale, IAddress } from './types'
+import type { IAddress } from '../../types'
+import type { AppLocale } from './types'
 
 const ORDINAL_LABELS = [
   'First', 'Second', 'Third', 'Fourth', 'Fifth',
@@ -36,8 +37,8 @@ export function createEmptyAddress(): IAddress {
     addressLine1: '',
     addressLine2: '',
     city: '',
-    countyOrState: '',
-    postcode: '',
     country: '',
+    state: '',
+    zipCode: '',
   }
 }

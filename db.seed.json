@@ -21,19 +21,19 @@
       "timeZone": "Europe/London"
     }
   ],
-  "onboarding_organisations": [
+  "onboarding_clients": [
     {
       "id": "org-001",
-      "organisationName": "Sunrise Care Group",
+      "organisation_name": "Sunrise Care Group",
       "address": {
         "addressLine1": "45 Victoria Street",
         "addressLine2": "Suite 300",
         "city": "London",
-        "countyOrState": "Greater London",
-        "postcode": "SW1H 0EU",
+        "state": "Greater London",
+        "zipCode": "SW1H 0EU",
         "country": "gb"
       },
-      "phoneNumber": "+44 20 7946 0958",
+      "phone": "+44 20 7946 0958",
       "organisationUrl": "https://sunrisecaregroup.example.com",
       "primaryContactId": "person-001",
       "isDeleted": false,
@@ -45,33 +45,36 @@
       }
     }
   ],
-  "onboarding_people": [
+  "onboarding_users": [
     {
       "id": "person-001",
       "firstName": "Sarah",
       "lastName": "Mitchell",
       "email": "sarah.mitchell@sunrisecaregroup.example.com",
-      "phoneNumber": "+44 7700 900123",
-      "role": "primary_contact",
-      "createdAt": "2026-01-10T09:00:00.000Z"
+      "phone": "+44 7700 900123",
+      "roles": ["ADMIN"],
+      "language": "en",
+      "isDeleted": false
     },
     {
       "id": "person-002",
       "firstName": "James",
       "lastName": "O'Connor",
       "email": "james.oconnor@sunrisecaregroup.example.com",
-      "phoneNumber": "+44 7700 900456",
-      "role": "team_member",
-      "createdAt": "2026-01-12T10:30:00.000Z"
+      "phone": "+44 7700 900456",
+      "roles": ["USER"],
+      "language": "en",
+      "isDeleted": false
     },
     {
       "id": "person-003",
       "firstName": "Emily",
       "lastName": "Davis",
       "email": "emily.davis@sunrisecaregroup.example.com",
-      "phoneNumber": "+44 7700 900789",
-      "role": "team_member",
-      "createdAt": "2026-01-15T14:00:00.000Z"
+      "phone": "+44 7700 900789",
+      "roles": ["USER"],
+      "language": "en",
+      "isDeleted": false
     }
   ],
   "onboarding_locations": [
@@ -83,8 +86,8 @@
         "addressLine1": "45 Victoria Street",
         "addressLine2": "Suite 300",
         "city": "London",
-        "countyOrState": "Greater London",
-        "postcode": "SW1H 0EU",
+        "state": "Greater London",
+        "zipCode": "SW1H 0EU",
         "country": "gb"
       },
       "countryOfOperation": "gb",
@@ -110,8 +113,8 @@
         "addressLine1": "12 Donegall Square",
         "addressLine2": "",
         "city": "Belfast",
-        "countyOrState": "Antrim",
-        "postcode": "BT1 5GS",
+        "state": "Antrim",
+        "zipCode": "BT1 5GS",
         "country": "ni"
       },
       "countryOfOperation": "ni",
@@ -137,8 +140,8 @@
         "addressLine1": "8 Merrion Square",
         "addressLine2": "",
         "city": "Dublin",
-        "countyOrState": "County Dublin",
-        "postcode": "D02 Y098",
+        "state": "County Dublin",
+        "zipCode": "D02 Y098",
         "country": "ie"
       },
       "countryOfOperation": "ie",

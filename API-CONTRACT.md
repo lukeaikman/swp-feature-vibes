@@ -6,11 +6,11 @@
 
 | Method | Path | Hook | Description |
 |---|---|---|---|
-| `GET` | `/api/onboarding/organisations/:id` | `useGetOrganisation(id)` | Get organisation by ID |
-| `POST` | `/api/onboarding/organisations` | `useCreateOrganisation()` | Create organisation |
-| `PUT` | `/api/onboarding/organisations/:id` | `useUpdateOrganisation()` | Update organisation |
-| `GET` | `/api/onboarding/people` | `useGetPeople()` | List people |
-| `POST` | `/api/onboarding/people` | `useCreatePerson()` | Create person |
+| `GET` | `/api/onboarding/clients/:id` | `useGetClient(id)` | Get client by ID |
+| `POST` | `/api/onboarding/clients` | `useCreateClient()` | Create client |
+| `PUT` | `/api/onboarding/clients/:id` | `useUpdateClient()` | Update client |
+| `GET` | `/api/onboarding/users` | `useGetUsers()` | List users |
+| `POST` | `/api/onboarding/users` | `useCreateUser()` | Create user |
 | `GET` | `/api/onboarding/locations` | `useGetLocations()` | List locations |
 | `POST` | `/api/onboarding/locations` | `useCreateLocation()` | Create location |
 | `PUT` | `/api/onboarding/locations/:id` | `useUpdateLocation()` | Update location |
@@ -23,34 +23,35 @@
 
 ---
 
-### GET /api/onboarding/organisations/:id — Get Organisation
+### GET /api/onboarding/clients/:id — Get Client
 
 | | |
 |---|---|
-| **React Query hook** | `useGetOrganisation(id)` in `src/entities/onboarding/api.ts` |
+| **React Query hook** | `useGetClient(id)` in `src/entities/onboarding/api.ts` |
+| **Query key** | `CLIENTS_QUERY` |
 | **Auth** | Authenticated, permission: `read` on `Onboarding` |
 
 **Path Parameters:**
 
 | Param | Type | Description |
 |---|---|---|
-| `id` | `string (UUID)` | Organisation ID |
+| `id` | `string (UUID)` | Client ID |
 
 **Response:** `200 OK`
 
 ```json
 {
   "id": "org-001",
-  "organisationName": "Sunrise Care Group",
+  "organisation_name": "Sunrise Care Group",
   "address": {
     "addressLine1": "45 Victoria Street",
     "addressLine2": "Suite 300",
     "city": "London",
-    "countyOrState": "Greater London",
-    "postcode": "SW1H 0EU",
+    "state": "Greater London",
+    "zipCode": "SW1H 0EU",
     "country": "gb"
   },
-  "phoneNumber": "+44 20 7946 0958",
+  "phone": "+44 20 7946 0958",
   "organisationUrl": "https://sunrisecaregroup.example.com",
   "primaryContactId": "person-001",
   "isDeleted": false,
@@ -68,11 +69,11 @@
 | Field | Type | Source | Description |
 |---|---|---|---|
 | `id` | `string (UUID)` | Server-generated | Unique identifier |
-| `organisationName` | `string` | Client-supplied | Organisation name |
+| `organisation_name` | `string` | Client-supplied | Organisation name |
 | `address` | `IAddress` | Client-supplied | Nested address object |
-| `phoneNumber` | `string` | Client-supplied | Organisation phone number |
+| `phone` | `string` | Client-supplied | Organisation phone number |
 | `organisationUrl` | `string?` | Client-supplied | Organisation website URL |
-| `primaryContactId` | `string (UUID)` | Client-supplied | References a Person entity |
+| `primaryContactId` | `string (UUID)` | Client-supplied | References a User entity |
 | `isDeleted` | `boolean` | Server-managed | Soft delete flag |
 | `_meta.created_at` | `string (ISO8601)` | Server-generated | Creation timestamp |
 | `_meta.updated_at` | `string (ISO8601)` | Server-generated | Last update timestamp |
@@ -85,38 +86,38 @@
 |---|---|
 | `401` | Not authenticated |
 | `403` | Missing `read` permission |
-| `404` | Organisation not found |
+| `404` | Client not found |
 
 ---
 
-### POST /api/onboarding/organisations — Create Organisation
+### POST /api/onboarding/clients — Create Client
 
 | | |
 |---|---|
-| **React Query hook** | `useCreateOrganisation()` in `src/entities/onboarding/api.ts` |
+| **React Query hook** | `useCreateClient()` in `src/entities/onboarding/api.ts` |
 | **Auth** | Authenticated, permission: `create` on `Onboarding` |
 
 **Request Body:**
 
 ```json
 {
-  "organisationName": "Sunrise Care Group",
+  "organisation_name": "Sunrise Care Group",
   "address": {
     "addressLine1": "45 Victoria Street",
     "addressLine2": "Suite 300",
     "city": "London",
-    "countyOrState": "Greater London",
-    "postcode": "SW1H 0EU",
+    "state": "Greater London",
+    "zipCode": "SW1H 0EU",
     "country": "gb"
   },
-  "phoneNumber": "+44 20 7946 0958",
+  "phone": "+44 20 7946 0958",
   "organisationUrl": "https://sunrisecaregroup.example.com",
   "primaryContactId": "person-001"
 }
 ```
 
-**Required fields:** `organisationName`, `address`, `phoneNumber`, `primaryContactId`
-**Optional fields:** `organisationUrl`, `address.addressLine2`, `address.city`, `address.countyOrState`
+**Required fields:** `organisation_name`, `address`, `phone`, `primaryContactId`
+**Optional fields:** `organisationUrl`, `address.addressLine2`, `address.city`, `address.state`
 
 **Response:** `201 Created`
 
@@ -125,7 +126,7 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 **Server-side behaviour:**
 - Validate required fields, reject with `400` if missing
 - Generate `id`, `_meta`, set `isDeleted: false`
-- Validate `primaryContactId` references an existing Person
+- Validate `primaryContactId` references an existing User
 
 **Error responses:**
 
@@ -137,11 +138,11 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 
 ---
 
-### PUT /api/onboarding/organisations/:id — Update Organisation
+### PUT /api/onboarding/clients/:id — Update Client
 
 | | |
 |---|---|
-| **React Query hook** | `useUpdateOrganisation()` in `src/entities/onboarding/api.ts` |
+| **React Query hook** | `useUpdateClient()` in `src/entities/onboarding/api.ts` |
 | **Auth** | Authenticated, permission: `update` on `Onboarding` |
 
 **Request Body:** Same shape as POST. All fields are updatable except `id`.
@@ -159,15 +160,16 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 | `400` | Missing required fields |
 | `401` | Not authenticated |
 | `403` | Missing `update` permission |
-| `404` | Organisation not found |
+| `404` | Client not found |
 
 ---
 
-### GET /api/onboarding/people — List People
+### GET /api/onboarding/users — List Users
 
 | | |
 |---|---|
-| **React Query hook** | `useGetPeople()` in `src/entities/onboarding/api.ts` |
+| **React Query hook** | `useGetUsers()` in `src/entities/onboarding/api.ts` |
+| **Query key** | `USERS_QUERY` |
 | **Auth** | Authenticated, permission: `read` on `Onboarding` |
 
 **Response:** `200 OK`
@@ -180,9 +182,10 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
       "firstName": "Sarah",
       "lastName": "Mitchell",
       "email": "sarah.mitchell@sunrisecaregroup.example.com",
-      "phoneNumber": "+44 7700 900123",
-      "role": "primary_contact",
-      "createdAt": "2026-01-10T09:00:00.000Z"
+      "phone": "+44 7700 900123",
+      "roles": ["ADMIN"],
+      "language": "en",
+      "isDeleted": false
     }
   ],
   "meta": { "page": 1, "limit": 50, "total": 3 }
@@ -194,12 +197,13 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 | Field | Type | Source | Description |
 |---|---|---|---|
 | `id` | `string (UUID)` | Server-generated | Unique identifier |
-| `firstName` | `string` | Client-supplied | Person's first name |
-| `lastName` | `string` | Client-supplied | Person's last name |
+| `firstName` | `string` | Client-supplied | User's first name |
+| `lastName` | `string` | Client-supplied | User's last name |
 | `email` | `string` | Client-supplied | Email address |
-| `phoneNumber` | `string` | Client-supplied | Phone number |
-| `role` | `PersonRole?` | Client-supplied | `primary_contact`, `secondary_contact`, `billing_contact`, or `team_member` |
-| `createdAt` | `string (ISO8601)` | Server-generated | Creation timestamp |
+| `phone` | `string` | Client-supplied | Phone number |
+| `roles` | `string[]` | Client-supplied | User roles, e.g. `["ADMIN"]` |
+| `language` | `string` | Client-supplied | Language code, e.g. `"en"` |
+| `isDeleted` | `boolean` | Server-managed | Soft delete flag |
 
 **Error responses:**
 
@@ -210,11 +214,11 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 
 ---
 
-### POST /api/onboarding/people — Create Person
+### POST /api/onboarding/users — Create User
 
 | | |
 |---|---|
-| **React Query hook** | `useCreatePerson()` in `src/entities/onboarding/api.ts` |
+| **React Query hook** | `useCreateUser()` in `src/entities/onboarding/api.ts` |
 | **Auth** | Authenticated, permission: `create` on `Onboarding` |
 
 **Request Body:**
@@ -224,15 +228,17 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
   "firstName": "Sarah",
   "lastName": "Mitchell",
   "email": "sarah.mitchell@sunrisecaregroup.example.com",
-  "phoneNumber": "+44 7700 900123",
-  "role": "primary_contact"
+  "phone": "+44 7700 900123",
+  "roles": ["ADMIN"],
+  "language": "en",
+  "isDeleted": false
 }
 ```
 
-**Required fields:** `firstName`, `lastName`, `email`, `phoneNumber`
-**Optional fields:** `role` (default: `team_member`)
+**Required fields:** `firstName`, `lastName`, `email`, `phone`
+**Optional fields:** `roles` (default: `["ADMIN"]`), `language` (default: `"en"`), `isDeleted` (default: `false`)
 
-**Response:** `201 Created` — Returns the full object with `id` and `createdAt` generated.
+**Response:** `201 Created` — Returns the full object with `id` generated.
 
 **Error responses:**
 
@@ -270,8 +276,8 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
         "addressLine1": "45 Victoria Street",
         "addressLine2": "Suite 300",
         "city": "London",
-        "countyOrState": "Greater London",
-        "postcode": "SW1H 0EU",
+        "state": "Greater London",
+        "zipCode": "SW1H 0EU",
         "country": "gb"
       },
       "countryOfOperation": "gb",
@@ -305,7 +311,7 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 | `countryOfOperation` | `string` | Client-supplied | Country code (e.g., `gb`, `ni`, `ie`, `us`) |
 | `locale` | `AppLocale` | Server-derived | Derived from `countryOfOperation`: `GB`, `Northern Ireland`, `Ireland`, `USA` |
 | `locationUrl` | `string?` | Client-supplied | Location website URL |
-| `keyContactId` | `string?` | Client-supplied | References a Person entity |
+| `keyContactId` | `string?` | Client-supplied | References a User entity |
 | `selectedProviderCategoryIds` | `string[]` | Client-supplied | Selected provider category IDs |
 | `selectedProviderSubcategoryIds` | `string[]` | Client-supplied | Selected subcategory IDs |
 | `careServiceIds` | `string[]` | Client-supplied | Selected care service IDs |
@@ -342,8 +348,8 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
     "addressLine1": "45 Victoria Street",
     "addressLine2": "Suite 300",
     "city": "London",
-    "countyOrState": "Greater London",
-    "postcode": "SW1H 0EU",
+    "state": "Greater London",
+    "zipCode": "SW1H 0EU",
     "country": "gb"
   },
   "countryOfOperation": "gb",
@@ -355,7 +361,7 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 }
 ```
 
-**Required fields:** `organisationId`, `locationName`, `address` (with `addressLine1` and `postcode`), `countryOfOperation`, `selectedProviderCategoryIds` (non-empty)
+**Required fields:** `organisationId`, `locationName`, `address` (with `addressLine1` and `zipCode`), `countryOfOperation`, `selectedProviderCategoryIds` (non-empty)
 **Optional fields:** `locationUrl`, `keyContactId`, `selectedProviderSubcategoryIds`, `careServiceIds`
 
 **Response:** `201 Created` — Returns the full object with server-generated fields.
@@ -363,8 +369,8 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 **Server-side behaviour:**
 - Derive `locale` from `countryOfOperation`
 - Generate `id`, `_meta`, set `isDeleted: false`
-- Validate `organisationId` references an existing Organisation
-- Validate `keyContactId` references an existing Person (if provided)
+- Validate `organisationId` references an existing Client
+- Validate `keyContactId` references an existing User (if provided)
 - Validate at least one `selectedProviderCategoryIds` entry
 
 **Error responses:**
@@ -403,6 +409,19 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 
 ---
 
+## Entity Mapping
+
+The onboarding module extends production entity types to maintain type alignment:
+
+| Entity | Type | Source | Used for |
+|---|---|---|---|
+| `IClient` | Extended from production | `safeworkplace-web-app/src/entities/client/types.ts` | Organisations |
+| `IUser` | Extended from production | `safeworkplace-web-app/src/entities/user/types.ts` | Contacts / people |
+| `IAddress` | Copied from production | `safeworkplace-web-app/src/api/types/address.ts` | Addresses |
+| `ILocation` | New | `src/entities/onboarding/types.ts` | Locations |
+
+---
+
 ## Reference Data Endpoints (Production Only)
 
 These are **not implemented** in the sandbox — static TypeScript imports are used instead. The backend team should build these for production.
@@ -421,8 +440,8 @@ Based on existing SWP conventions:
 
 | Entity | PK | SK | GSI1 PK | GSI1 SK |
 |---|---|---|---|---|
-| Organisation | `ONBOARDING_ORG#` | `ONBOARDING_ORG#${id}` | `ONBOARDING_ORG#` | `ONBOARDING_ORG#${id}` |
-| Person | `ONBOARDING_PERSON#` | `ONBOARDING_PERSON#${id}` | `ONBOARDING_ORG#${orgId}` | `ONBOARDING_PERSON#${id}` |
+| Client | `ONBOARDING_ORG#` | `ONBOARDING_ORG#${id}` | `ONBOARDING_ORG#` | `ONBOARDING_ORG#${id}` |
+| User | `ONBOARDING_USER#` | `ONBOARDING_USER#${id}` | `ONBOARDING_ORG#${orgId}` | `ONBOARDING_USER#${id}` |
 | Location | `ONBOARDING_LOCATION#` | `ONBOARDING_LOCATION#${id}` | `ONBOARDING_ORG#${orgId}` | `ONBOARDING_LOCATION#${id}` |
 
 ---
@@ -431,10 +450,10 @@ Based on existing SWP conventions:
 
 | Endpoint | What It Should Do | What the Isolated Module Does Instead |
 |---|---|---|
-| `POST .../organisations` | Validate `primaryContactId` exists, generate audit fields from auth token | Client-side supplies all fields including `_meta` |
+| `POST .../clients` | Validate `primaryContactId` exists, generate audit fields from auth token | Client-side supplies all fields including `_meta` |
 | `POST .../locations` | Derive `locale` server-side, validate `organisationId` and `keyContactId`, validate at least 1 category | Client-side derives locale and supplies all fields |
-| `POST .../people` | Generate `createdAt` server-side | Client-side supplies `createdAt` |
-| Complete Setup (multi-entity) | Transactional save of org + locations, possibly trigger default legislation setup | Sequential individual POSTs, no transaction |
+| `POST .../users` | Generate `id` server-side | Client-side supplies `id` |
+| Complete Setup (multi-entity) | Transactional save of client + locations, possibly trigger default legislation setup | Sequential individual POSTs, no transaction |
 
 ---
 
@@ -445,25 +464,27 @@ const addressSchema = Joi.object({
   addressLine1: Joi.string().required(),
   addressLine2: Joi.string().allow('').optional(),
   city: Joi.string().allow('').optional(),
-  countyOrState: Joi.string().allow('').optional(),
-  postcode: Joi.string().required(),
+  state: Joi.string().allow('').optional(),
+  zipCode: Joi.string().required(),
   country: Joi.string().required(),
 })
 
-const createOrganisationSchema = Joi.object({
-  organisationName: Joi.string().max(200).required(),
+const createClientSchema = Joi.object({
+  organisation_name: Joi.string().max(200).required(),
   address: addressSchema.required(),
-  phoneNumber: Joi.string().required(),
+  phone: Joi.string().required(),
   organisationUrl: Joi.string().uri().allow('').optional(),
   primaryContactId: Joi.string().uuid().required(),
 })
 
-const createPersonSchema = Joi.object({
+const createUserSchema = Joi.object({
   firstName: Joi.string().required(),
   lastName: Joi.string().required(),
   email: Joi.string().email().required(),
-  phoneNumber: Joi.string().required(),
-  role: Joi.string().valid('primary_contact', 'secondary_contact', 'billing_contact', 'team_member').default('team_member'),
+  phone: Joi.string().required(),
+  roles: Joi.array().items(Joi.string()).default(['ADMIN']),
+  language: Joi.string().default('en'),
+  isDeleted: Joi.boolean().default(false),
 })
 
 const createLocationSchema = Joi.object({
@@ -487,13 +508,13 @@ When verifying the real API works with the frontend:
 
 1. **Onboarding page loads:** Navigate to `/onboarding`. Verify Step 1 form renders.
 2. **Step 1 validation:** Leave fields empty, click Next. Verify validation errors appear.
-3. **Step 1 save:** Fill all required fields, click Next. Verify org and person are created in the database.
+3. **Step 1 save:** Fill all required fields, click Next. Verify client and user are created in the database.
 4. **Step 2 loads:** Verify location card renders with "Copy from organisation" link.
 5. **Copy from org:** Click the link. Verify address, country, URL, and contact are copied.
 6. **Provider categories:** Select a category. Verify subcategories appear. Select a subcategory. Verify unselected subcategories hide.
 7. **Care services:** Select a category with care services. Verify care services section appears.
 8. **Add location:** Click "+ Add Another Location". Verify new card appears and existing cards collapse.
 9. **Remove location:** Click Remove on a location. Verify confirmation modal. Confirm removal. Verify location is removed.
-10. **Add person:** In key contact dropdown, select "+ Add new person". Verify dialog opens. Fill and save. Verify new person appears in dropdown.
+10. **Add user:** In key contact dropdown, select "+ Add new person". Verify dialog opens. Fill and save. Verify new user appears in dropdown.
 11. **Complete Setup:** Fill all locations, click Complete Setup. Verify all locations are created. Verify redirect to dashboard.
 12. **Back preserves data:** Go to Step 2, add data, click Back. Verify Step 1 shows previously entered data. Click Next. Verify Step 2 data is preserved.
