@@ -280,7 +280,6 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
         "zipCode": "SW1H 0EU",
         "country": "gb"
       },
-      "countryOfOperation": "gb",
       "locale": "GB",
       "locationUrl": "https://sunrisecaregroup.example.com/london",
       "keyContactId": "person-001",
@@ -308,8 +307,7 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 | `organisationId` | `string (UUID)` | Client-supplied | Parent organisation reference |
 | `locationName` | `string` | Client-supplied | Location display name |
 | `address` | `IAddress` | Client-supplied | Nested address object |
-| `countryOfOperation` | `string` | Client-supplied | Country code (e.g., `gb`, `ni`, `ie`, `us`) |
-| `locale` | `AppLocale` | Server-derived | Derived from `countryOfOperation`: `GB`, `Northern Ireland`, `Ireland`, `USA` |
+| `locale` | `AppLocale` | Server-derived | Derived from `address.country`: `GB`, `Northern Ireland`, `Ireland`, `USA` |
 | `locationUrl` | `string?` | Client-supplied | Location website URL |
 | `keyContactId` | `string?` | Client-supplied | References a User entity |
 | `selectedProviderCategoryIds` | `string[]` | Client-supplied | Selected provider category IDs |
@@ -352,7 +350,6 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
     "zipCode": "SW1H 0EU",
     "country": "gb"
   },
-  "countryOfOperation": "gb",
   "locationUrl": "https://sunrisecaregroup.example.com/london",
   "keyContactId": "person-001",
   "selectedProviderCategoryIds": ["long_term_care"],
@@ -361,13 +358,13 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 }
 ```
 
-**Required fields:** `organisationId`, `locationName`, `address` (with `addressLine1` and `zipCode`), `countryOfOperation`, `selectedProviderCategoryIds` (non-empty)
+**Required fields:** `organisationId`, `locationName`, `address` (with `addressLine1`, `zipCode`, and `country`), `selectedProviderCategoryIds` (non-empty)
 **Optional fields:** `locationUrl`, `keyContactId`, `selectedProviderSubcategoryIds`, `careServiceIds`
 
 **Response:** `201 Created` — Returns the full object with server-generated fields.
 
 **Server-side behaviour:**
-- Derive `locale` from `countryOfOperation`
+- Derive `locale` from `address.country`
 - Generate `id`, `_meta`, set `isDeleted: false`
 - Validate `organisationId` references an existing Client
 - Validate `keyContactId` references an existing User (if provided)
@@ -491,7 +488,6 @@ const createLocationSchema = Joi.object({
   organisationId: Joi.string().uuid().required(),
   locationName: Joi.string().max(200).required(),
   address: addressSchema.required(),
-  countryOfOperation: Joi.string().required(),
   locationUrl: Joi.string().uri().allow('').optional(),
   keyContactId: Joi.string().uuid().allow(null).optional(),
   selectedProviderCategoryIds: Joi.array().items(Joi.string()).min(1).required(),

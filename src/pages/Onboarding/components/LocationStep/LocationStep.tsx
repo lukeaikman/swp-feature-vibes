@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Button, Text } from '@UI'
+import { Button, Text, Column, Row } from '@UI'
 import { LocationCard } from '../LocationCard'
 import type { ILocation } from '../../../../entities/onboarding'
 import type { IClient, IUser } from '../../../../types'
@@ -67,7 +67,7 @@ export const LocationStep = ({
       if (!loc.locationName?.trim()) locErrors.push('Location name is required')
       if (!loc.address?.addressLine1?.trim()) locErrors.push('Address line 1 is required')
       if (!loc.address?.zipCode?.trim()) locErrors.push('Postcode is required')
-      if (!loc.countryOfOperation) locErrors.push('Country of operation is required')
+      if (!loc.address?.country) locErrors.push('Country is required')
       if (!loc.selectedProviderCategoryIds?.length) locErrors.push('At least one provider category is required')
 
       if (locErrors.length > 0) {
@@ -90,11 +90,11 @@ export const LocationStep = ({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <Column gap={3}>
       <Text style={{ fontWeight: 700, fontSize: 20 }}>Location Setup</Text>
 
       {locations.map((location, index) => (
-        <div key={index}>
+        <Column key={index} gap={1}>
           <LocationCard
             index={index}
             location={location}
@@ -112,15 +112,15 @@ export const LocationStep = ({
             onPersonCreated={handlePersonCreated}
           />
           {validationErrors[index] && (
-            <div style={{ marginTop: 4 }}>
+            <Column>
               {validationErrors[index].map((err, errIdx) => (
                 <Text key={errIdx} style={{ color: '#d32f2f', fontSize: 13 }}>
                   {err}
                 </Text>
               ))}
-            </div>
+            </Column>
           )}
-        </div>
+        </Column>
       ))}
 
       <Button onClick={handleAddLocation}>+ Add Another Location</Button>
@@ -129,13 +129,13 @@ export const LocationStep = ({
         <Text style={{ color: '#d32f2f', fontSize: 14 }}>{submitError}</Text>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
+      <Row justifyContent="space-between" style={{ marginTop: 16 }}>
         <Button onClick={onBack}>Back</Button>
         <Button onClick={handleComplete} disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : 'Complete Setup'}
         </Button>
-      </div>
-    </div>
+      </Row>
+    </Column>
   )
 }
 

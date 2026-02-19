@@ -11,7 +11,6 @@ export interface ILocation {
   organisationId: string
   locationName: string
   address: IAddress
-  countryOfOperation: string
   locale: AppLocale
   locationUrl?: string
   keyContactId?: string

@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
-import { ContentBox, Input, Select, Button, Text, Modal } from '@UI'
+import { ContentBox, Input, Select, Button, Text, Modal, Row, Column } from '@UI'
+import { Divider, useMediaQuery } from '@material-ui/core'
+import { useTheme } from '@material-ui/core/styles'
 import { AddressFields } from '../AddressFields'
 import { ProviderCategorySelector } from '../ProviderCategorySelector'
 import { AddPersonDialog } from '../AddPersonDialog'
@@ -54,25 +56,19 @@ export const LocationCard = ({
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
   const [showAddPerson, setShowAddPerson] = useState(false)
 
-  const locale: AppLocale = location.locale ?? mapCountryToLocale(location.countryOfOperation ?? '')
+  const theme = useTheme()
+  const isStacked = useMediaQuery(theme.breakpoints.down('md'))
+
+  const locale: AppLocale = location.locale ?? mapCountryToLocale(location.address?.country ?? '')
 
   const handleCopyFromOrg = () => {
     if (!orgAddress) return
     onChange({
       ...location,
       address: { ...createEmptyAddress(), ...orgAddress } as IAddress,
-      countryOfOperation: orgAddress.country ?? '',
       locale: mapCountryToLocale(orgAddress.country ?? ''),
       locationUrl: orgUrl ?? '',
       keyContactId: orgPrimaryContactId ?? undefined,
-    })
-  }
-
-  const handleCountryChange = (country: string) => {
-    onChange({
-      ...location,
-      countryOfOperation: country,
-      locale: mapCountryToLocale(country),
     })
   }
 
@@ -94,35 +90,38 @@ export const LocationCard = ({
     { value: ADD_PERSON_VALUE, label: '+ Add new person' },
   ]
 
+  const addressSummary = () => {
+    const parts = [location.address?.addressLine1, location.address?.city].filter(Boolean)
+    return parts.join(', ') || ''
+  }
+
   const collapsedSummary = () => {
     const name = location.locationName || 'Unnamed'
-    const country = countryItems.find((c) => c.value === location.countryOfOperation)?.label ?? ''
+    const addr = addressSummary()
     const catCount = location.selectedProviderCategoryIds?.length ?? 0
     const contact = people.find((p) => p.id === location.keyContactId)
     const contactName = contact ? `${contact.firstName} ${contact.lastName}` : ''
 
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
+      <Row gap={2} alignItems="center" flex={1}>
         <Text style={{ fontWeight: 600 }}>{getLocationLabel(index)} — {name}</Text>
-        {country && <Text style={{ fontSize: 13, color: '#666' }}>{country}</Text>}
+        {addr && <Text style={{ fontSize: 13, color: '#666' }}>{addr}</Text>}
         {catCount > 0 && (
           <Text style={{ fontSize: 13, color: '#666' }}>
             {catCount} {catCount === 1 ? 'category' : 'categories'}
           </Text>
         )}
         {contactName && <Text style={{ fontSize: 13, color: '#666' }}>{contactName}</Text>}
-      </div>
+      </Row>
     )
   }
 
   return (
     <ContentBox>
-      {/* Header */}
-      <div
+      <Row
+        alignItems="center"
+        justifyContent="space-between"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
           cursor: isCollapsible ? 'pointer' : 'default',
           marginBottom: isExpanded ? 16 : 0,
         }}
@@ -133,7 +132,7 @@ export const LocationCard = ({
         ) : (
           collapsedSummary()
         )}
-        <div style={{ display: 'flex', gap: 8 }}>
+        <Row gap={1} alignItems="center">
           {canRemove && (
             <Button
               onClick={(e: React.MouseEvent) => {
@@ -146,15 +145,14 @@ export const LocationCard = ({
           )}
           {isCollapsible && (
             <Text style={{ fontSize: 13, color: '#1976d2', cursor: 'pointer' }}>
-              {isExpanded ? 'Collapse' : 'Expand'}
+              {isExpanded ? 'Collapse' : 'Edit'}
             </Text>
           )}
-        </div>
-      </div>
+        </Row>
+      </Row>
 
-      {/* Expanded content */}
       {isExpanded && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <Column gap={3}>
           {isFirstLocation && orgAddress && (
             <Text
               style={{ color: '#1976d2', cursor: 'pointer', fontSize: 14 }}
@@ -164,53 +162,106 @@ export const LocationCard = ({
             </Text>
           )}
 
-          {/* Row: Location Name | Location URL */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Input
-              label="Location Name *"
-              fullWidth
-              value={location.locationName ?? ''}
-              onChange={(e) =>
-                onChange({ ...location, locationName: (e.target as HTMLInputElement).value })
-              }
-            />
-            <Input
-              label="Location URL"
-              type="url"
-              fullWidth
-              value={location.locationUrl ?? ''}
-              onChange={(e) =>
-                onChange({ ...location, locationUrl: (e.target as HTMLInputElement).value })
-              }
-            />
-          </div>
+          {isStacked ? (
+            <Column gap={3}>
+              <Column gap={2}>
+                <Input
+                  label="Location Name *"
+                  fullWidth
+                  value={location.locationName ?? ''}
+                  onChange={(e) =>
+                    onChange({ ...location, locationName: (e.target as HTMLInputElement).value })
+                  }
+                />
+                <Input
+                  label="Location URL"
+                  type="url"
+                  fullWidth
+                  value={location.locationUrl ?? ''}
+                  onChange={(e) =>
+                    onChange({ ...location, locationUrl: (e.target as HTMLInputElement).value })
+                  }
+                />
+                <Select
+                  label="Key Contact"
+                  fullWidth
+                  value={location.keyContactId ?? ''}
+                  items={contactItems}
+                  onChange={handleKeyContactChange}
+                  emptyLabel="Select a contact (optional)"
+                />
+              </Column>
 
-          <Text style={{ fontWeight: 600, fontSize: 16 }}>Location Address</Text>
+              <Divider />
 
-          <AddressFields
-            address={location.address ?? createEmptyAddress()}
-            onChange={(addr) =>
-              onChange({ ...location, address: { ...createEmptyAddress(), ...addr } as IAddress })
-            }
-          />
+              <Column gap={2}>
+                <Text style={{ fontWeight: 600, fontSize: 16 }}>Location Address</Text>
+                <AddressFields
+                  address={location.address ?? createEmptyAddress()}
+                  onChange={(addr) => {
+                    const merged = { ...createEmptyAddress(), ...addr } as IAddress
+                    onChange({
+                      ...location,
+                      address: merged,
+                      locale: mapCountryToLocale(merged.country ?? ''),
+                    })
+                  }}
+                />
+              </Column>
+            </Column>
+          ) : (
+            <Row gap={3}>
+              <Column gap={2} flex={1}>
+                <Input
+                  label="Location Name *"
+                  fullWidth
+                  value={location.locationName ?? ''}
+                  onChange={(e) =>
+                    onChange({ ...location, locationName: (e.target as HTMLInputElement).value })
+                  }
+                />
+                <Input
+                  label="Location URL"
+                  type="url"
+                  fullWidth
+                  value={location.locationUrl ?? ''}
+                  onChange={(e) =>
+                    onChange({ ...location, locationUrl: (e.target as HTMLInputElement).value })
+                  }
+                />
+                <Select
+                  label="Key Contact"
+                  fullWidth
+                  value={location.keyContactId ?? ''}
+                  items={contactItems}
+                  onChange={handleKeyContactChange}
+                  emptyLabel="Select a contact (optional)"
+                />
+              </Column>
 
-          {/* Row: Country of Operation | Key Contact */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Select
-              label="Country of Operation *"
-              value={location.countryOfOperation ?? ''}
-              items={countryItems}
-              onChange={handleCountryChange}
-              emptyLabel="Select a country"
-            />
-            <Select
-              label="Key Contact"
-              value={location.keyContactId ?? ''}
-              items={contactItems}
-              onChange={handleKeyContactChange}
-              emptyLabel="Select a contact (optional)"
-            />
-          </div>
+              <Divider
+                orientation="vertical"
+                flexItem
+                style={{ backgroundColor: theme.palette.primary.main, opacity: 0.15 }}
+              />
+
+              <Column gap={2} flex={2}>
+                <AddressFields
+                  address={location.address ?? createEmptyAddress()}
+                  onChange={(addr) => {
+                    const merged = { ...createEmptyAddress(), ...addr } as IAddress
+                    onChange({
+                      ...location,
+                      address: merged,
+                      locale: mapCountryToLocale(merged.country ?? ''),
+                    })
+                  }}
+                />
+              </Column>
+            </Row>
+          )}
+
+          <Divider />
 
           <ProviderCategorySelector
             locale={locale}
@@ -221,21 +272,20 @@ export const LocationCard = ({
             onSubcategoriesChange={(ids) => onChange({ ...location, selectedProviderSubcategoryIds: ids })}
             onCareServicesChange={(ids) => onChange({ ...location, careServiceIds: ids })}
           />
-        </div>
+        </Column>
       )}
 
-      {/* Remove confirmation modal */}
       <Modal
         isOpen={showRemoveConfirm}
         close={() => setShowRemoveConfirm(false)}
         title="Remove Location"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <Column gap={2}>
           <Text>
             Are you sure you want to remove {getLocationLabel(index)}
             {location.locationName ? ` — ${location.locationName}` : ''}?
           </Text>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Row gap={1} justifyContent="flex-end">
             <Button onClick={() => setShowRemoveConfirm(false)}>Cancel</Button>
             <Button
               onClick={() => {
@@ -245,11 +295,10 @@ export const LocationCard = ({
             >
               Remove
             </Button>
-          </div>
-        </div>
+          </Row>
+        </Column>
       </Modal>
 
-      {/* Add person dialog */}
       <AddPersonDialog
         isOpen={showAddPerson}
         onClose={() => setShowAddPerson(false)}

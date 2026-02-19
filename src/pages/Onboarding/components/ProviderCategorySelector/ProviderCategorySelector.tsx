@@ -1,8 +1,17 @@
 import React, { useState, useMemo } from 'react'
-import { Checkbox, Text } from '@UI'
+import { Checkbox, Text, Column } from '@UI'
+import { makeStyles } from '@material-ui/core/styles'
 import { HEALTHCARE_PROVIDER_TYPES } from '../../../../data/healthcare-provider-types'
 import { mapLocaleToReferenceCode } from '../../../../entities/onboarding'
 import type { AppLocale, ICareServiceDefinition } from '../../../../entities/onboarding'
+
+const useStyles = makeStyles((theme) => ({
+  checkboxItem: {
+    '& .MuiCheckbox-root': {
+      marginRight: theme.spacing(1),
+    },
+  },
+}))
 
 interface ProviderCategorySelectorProps {
   locale: AppLocale
@@ -25,6 +34,7 @@ export const ProviderCategorySelector = ({
   onCareServicesChange,
   errors,
 }: ProviderCategorySelectorProps) => {
+  const classes = useStyles()
   const localeCode = mapLocaleToReferenceCode(locale)
 
   // Track which categories have had subcategory selections (for visibility state machine)
@@ -119,14 +129,14 @@ export const ProviderCategorySelector = ({
   }, [selectedCategoryIds, selectedSubcategoryIds, localeCode])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <Column gap={2}>
       <Text style={{ fontWeight: 600, fontSize: 16 }}>
         What type of healthcare provider is this location?
       </Text>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {filteredCategories.map((category) => (
-          <div key={category.id}>
+          <div key={category.id} className={classes.checkboxItem}>
             <Checkbox
               label={category.name}
               checked={selectedCategoryIds.includes(category.id)}
@@ -140,7 +150,6 @@ export const ProviderCategorySelector = ({
         <Text style={{ color: '#d32f2f', fontSize: 13 }}>{errors.categories}</Text>
       )}
 
-      {/* Subcategories for selected categories */}
       {selectedCategoryIds.map((catId) => {
         const category = HEALTHCARE_PROVIDER_TYPES[catId]
         if (!category || category.subcategories.length === 0) return null
@@ -153,50 +162,50 @@ export const ProviderCategorySelector = ({
           ? subcats.filter((s) => selectedSubcategoryIds.includes(s.id))
           : subcats
 
-        // If filtering left nothing visible (all were deselected), show all
         const displaySubcats = visibleSubcats.length === 0 ? subcats : visibleSubcats
 
         return (
-          <div key={catId} style={{ marginLeft: 24, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <Column key={catId} gap={1} style={{ marginLeft: 24 }}>
             <Text style={{ fontWeight: 500, fontSize: 14, color: '#666' }}>
               {category.name} — Subcategories
             </Text>
             {displaySubcats.map((sub) => (
-              <Checkbox
-                key={sub.id}
-                label={sub.name}
-                checked={selectedSubcategoryIds.includes(sub.id)}
-                onChange={(e) =>
-                  handleSubcategoryToggle(catId, sub.id, (e.target as HTMLInputElement).checked)
-                }
-              />
+              <div key={sub.id} className={classes.checkboxItem}>
+                <Checkbox
+                  label={sub.name}
+                  checked={selectedSubcategoryIds.includes(sub.id)}
+                  onChange={(e) =>
+                    handleSubcategoryToggle(catId, sub.id, (e.target as HTMLInputElement).checked)
+                  }
+                />
+              </div>
             ))}
-          </div>
+          </Column>
         )
       })}
 
-      {/* Care services */}
       {availableCareServices.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+        <Column gap={1} style={{ marginTop: 8 }}>
           <Text style={{ fontWeight: 600, fontSize: 16 }}>
             What care services does this location provide?
           </Text>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {availableCareServices.map((svc) => (
-              <Checkbox
-                key={svc.id}
-                label={svc.name}
-                checked={selectedCareServiceIds.includes(svc.id)}
-                onChange={(e) => handleCareServiceToggle(svc.id, (e.target as HTMLInputElement).checked)}
-              />
+              <div key={svc.id} className={classes.checkboxItem}>
+                <Checkbox
+                  label={svc.name}
+                  checked={selectedCareServiceIds.includes(svc.id)}
+                  onChange={(e) => handleCareServiceToggle(svc.id, (e.target as HTMLInputElement).checked)}
+                />
+              </div>
             ))}
           </div>
           {errors?.careServices && (
             <Text style={{ color: '#d32f2f', fontSize: 13 }}>{errors.careServices}</Text>
           )}
-        </div>
+        </Column>
       )}
-    </div>
+    </Column>
   )
 }
 

@@ -1,5 +1,7 @@
 import React from 'react'
-import { Input, Select } from '@UI'
+import { Input, Select, Row, Column } from '@UI'
+import { useMediaQuery } from '@material-ui/core'
+import { useTheme } from '@material-ui/core/styles'
 import { COUNTRY_GROUPS } from '../../../../entities/onboarding'
 import type { IAddress } from '../../../../types'
 
@@ -14,64 +16,74 @@ const countryItems = COUNTRY_GROUPS.flatMap((group) =>
 )
 
 export const AddressFields = ({ address, onChange, errors }: AddressFieldsProps) => {
+  const theme = useTheme()
+  const isNarrow = useMediaQuery(theme.breakpoints.down('sm'))
+
   const update = (field: keyof IAddress, value: string) => {
     onChange({ ...address, [field]: value })
   }
 
+  const FieldRow = isNarrow ? Column : Row
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {/* Row 1: Address Line 1 (full width, keep label) */}
-      <Input
-        label="Address Line 1 *"
-        fullWidth
-        value={address.addressLine1 ?? ''}
-        onChange={(e) => update('addressLine1', (e.target as HTMLInputElement).value)}
-        errors={errors?.addressLine1 ? [errors.addressLine1] : undefined}
-      />
-
-      {/* Row 2: Address Line 2 (full width, placeholder only) */}
-      <Input
-        fullWidth
-        placeholder="Address Line 2"
-        value={address.addressLine2 ?? ''}
-        onChange={(e) => update('addressLine2', (e.target as HTMLInputElement).value)}
-      />
-
-      {/* Row 3: City | County/State (2-up, placeholders) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+    <Column gap={2}>
+      <FieldRow gap={2}>
         <Input
+          label="Address Line 1 *"
           fullWidth
-          placeholder="City"
+          value={address.addressLine1 ?? ''}
+          onChange={(e) => update('addressLine1', (e.target as HTMLInputElement).value)}
+          errors={errors?.addressLine1 ? [errors.addressLine1] : undefined}
+          containerStyle={{ flex: 1 }}
+        />
+        <Input
+          label="Address Line 2"
+          fullWidth
+          value={address.addressLine2 ?? ''}
+          onChange={(e) => update('addressLine2', (e.target as HTMLInputElement).value)}
+          containerStyle={{ flex: 1 }}
+        />
+      </FieldRow>
+
+      <FieldRow gap={2}>
+        <Input
+          label="City"
+          fullWidth
           value={address.city ?? ''}
           onChange={(e) => update('city', (e.target as HTMLInputElement).value)}
+          containerStyle={{ flex: 1 }}
         />
         <Input
+          label="County / State"
           fullWidth
-          placeholder="County / State"
           value={address.state ?? ''}
           onChange={(e) => update('state', (e.target as HTMLInputElement).value)}
+          containerStyle={{ flex: 1 }}
         />
-      </div>
+      </FieldRow>
 
-      {/* Row 4: Postcode | Country (2-up) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <FieldRow gap={2}>
         <Input
           label="Postcode *"
           fullWidth
           value={address.zipCode ?? ''}
           onChange={(e) => update('zipCode', (e.target as HTMLInputElement).value)}
           errors={errors?.zipCode ? [errors.zipCode] : undefined}
+          containerStyle={{ flex: 1 }}
         />
-        <Select
-          label="Country *"
-          value={address.country ?? ''}
-          items={countryItems}
-          onChange={(value) => update('country', value)}
-          emptyLabel="Select a country"
-          errors={errors?.country ? [errors.country] : undefined}
-        />
-      </div>
-    </div>
+        <div style={{ flex: 1 }}>
+          <Select
+            label="Country *"
+            fullWidth
+            value={address.country ?? ''}
+            items={countryItems}
+            onChange={(value) => update('country', value)}
+            emptyLabel="Select a country"
+            errors={errors?.country ? [errors.country] : undefined}
+          />
+        </div>
+      </FieldRow>
+    </Column>
   )
 }
 

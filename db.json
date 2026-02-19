@@ -1693,7 +1693,6 @@
         "zipCode": "SW1H 0EU",
         "country": "gb"
       },
-      "countryOfOperation": "gb",
       "locale": "GB",
       "locationUrl": "https://sunrisecaregroup.example.com/london",
       "keyContactId": "person-001",
@@ -1727,7 +1726,6 @@
         "zipCode": "BT1 5GS",
         "country": "ni"
       },
-      "countryOfOperation": "ni",
       "locale": "Northern Ireland",
       "locationUrl": "",
       "keyContactId": "person-002",
@@ -1761,7 +1759,6 @@
         "zipCode": "D02 Y098",
         "country": "ie"
       },
-      "countryOfOperation": "ie",
       "locale": "Ireland",
       "locationUrl": "",
       "keyContactId": "person-003",
@@ -1794,7 +1791,6 @@
         "state": "",
         "zipCode": "loc1"
       },
-      "countryOfOperation": "gb",
       "locale": "GB",
       "keyContactId": "a8FlT1D",
       "selectedProviderCategoryIds": [
@@ -1828,7 +1824,6 @@
         "state": "Greater Manchester",
         "zipCode": "M3 2EG"
       },
-      "countryOfOperation": "gb",
       "locale": "GB",
       "selectedProviderCategoryIds": [
         "long_term_care"
@@ -1856,7 +1851,6 @@
         "state": "",
         "zipCode": "wd17"
       },
-      "countryOfOperation": "gb",
       "locale": "GB",
       "locationUrl": "http://www.org.com",
       "keyContactId": "P3xRQKY",
@@ -1899,7 +1893,6 @@
       "careServiceIds": [
         "outpatient_rehab"
       ],
-      "countryOfOperation": "gb",
       "locale": "GB",
       "keyContactId": "P3xRQKY",
       "organisationId": "lnhQ9n4",
@@ -1922,7 +1915,6 @@
         "state": "",
         "zipCode": "wd17 3dp"
       },
-      "countryOfOperation": "gb",
       "locale": "GB",
       "keyContactId": "0L9lRWM",
       "selectedProviderCategoryIds": [

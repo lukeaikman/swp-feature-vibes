@@ -1,5 +1,20 @@
 # Onboarding Module Changelog
 
+## 2026-02-19 — Location form redesign
+
+### What was done
+- Removed `countryOfOperation` from `ILocation` — redundant with `address.country`. Locale is now derived from `address.country` via `mapCountryToLocale()`.
+- Rewrote `LocationCard`, `LocationStep`, and `AddressFields` to use production `Row`/`Column` layout primitives from `@UI` instead of raw `div` + inline CSS grid.
+- New layout: 3-up top row (Location Name | Location URL | Key Contact), address fields all 2-up, sections separated by MUI `Divider`.
+- Fixed checkbox-to-label spacing in `ProviderCategorySelector` using production `makeStyles` pattern (`marginRight: theme.spacing(1)` on `.MuiCheckbox-root`).
+- Improved collapsed location card summary: shows address snippet and uses "Edit" instead of "Expand".
+- Removed Country of Operation from mock data, E2E tests, and all documentation.
+
+### Decisions made
+- `countryOfOperation` was always a copy of `address.country` — the same dropdown options, the same values. Removed to avoid drift.
+- Used production `Row`/`Column` (exported from `@UI/layout`) over CSS grid to match every other page in the production app.
+- Checkbox spacing fix matches the exact pattern from `LocationSettingsPage.tsx` in the production app.
+
 ## 2026-02-19 — Type alignment with production entities
 
 ### What was done

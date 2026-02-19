@@ -98,7 +98,7 @@ const Onboarding = () => {
         await createLocation.mutateAsync({
           ...location,
           organisationId: persistedOrgId!,
-          locale: mapCountryToLocale(location.countryOfOperation ?? ''),
+          locale: mapCountryToLocale(location.address?.country ?? ''),
           selectedProviderCategoryIds: location.selectedProviderCategoryIds ?? [],
           selectedProviderSubcategoryIds: location.selectedProviderSubcategoryIds ?? [],
           careServiceIds: location.careServiceIds ?? [],

@@ -9,11 +9,14 @@ These components are referenced directly from `safeworkplace-web-app/src/UI/` vi
 | `@UI/PageContainer` | `Onboarding.tsx` | Standard page wrapper with breadcrumbs |
 | `@UI/ContentBox` | `OrganisationStep`, `LocationCard`, feedback messages | Bordered content card for grouping |
 | `@UI/Input` | All form fields across all components | Text, email, tel, url types |
-| `@UI/Select` | `AddressFields` (country), `LocationCard` (country of operation, key contact) | Used with flat items array |
+| `@UI/Select` | `AddressFields` (country), `LocationCard` (key contact) | Used with flat items array |
 | `@UI/Checkbox` | `ProviderCategorySelector` | Categories, subcategories, and care services |
 | `@UI/Button` | All components | Next, Back, Complete Setup, Add Location, Remove, dialog actions |
 | `@UI/Modal` | `AddPersonDialog`, `LocationCard` (remove confirmation) | Dialog overlay |
 | `@UI/Text` | All components | Labels, headings, feedback messages, summaries |
+| `@UI/Row` | `LocationCard`, `LocationStep`, `AddressFields` | Flex row layout primitive with theme-aware `gap` prop |
+| `@UI/Column` | `LocationCard`, `LocationStep`, `AddressFields`, `ProviderCategorySelector` | Flex column layout primitive with theme-aware `gap` prop |
+| `MUI/Divider` | `LocationCard` | Section separators between location details, address, and provider categories |
 | `@UI/Loader` | — | Available but not actively used (wizard is form-based, no data loading on mount) |
 | `@UI/TextPlaceholder` | — | Available but not actively used (empty states handled inline) |
 
@@ -97,7 +100,7 @@ Strings are hardcoded in English (Lingui is shimmed). Locations that need i18n w
 | `src/pages/Onboarding/Onboarding.tsx` | "Organisation details saved", "Failed to save...", "Onboarding complete!" |
 | `src/pages/Onboarding/components/OrganisationStep/OrganisationStep.tsx` | "Organisation Details", "Primary Contact", "Organisation Address", field labels, validation messages |
 | `src/pages/Onboarding/components/LocationStep/LocationStep.tsx` | "Location Setup", "+ Add Another Location", "Complete Setup", "Back", validation messages |
-| `src/pages/Onboarding/components/LocationCard/LocationCard.tsx` | "Copy details from organisation", "Remove", "Expand"/"Collapse", field labels, "Remove Location" confirmation |
+| `src/pages/Onboarding/components/LocationCard/LocationCard.tsx` | "Copy details from organisation", "Remove", "Edit"/"Collapse", field labels, "Remove Location" confirmation |
 | `src/pages/Onboarding/components/ProviderCategorySelector/ProviderCategorySelector.tsx` | "What type of healthcare provider...", "What care services...", subcategory heading |
 | `src/pages/Onboarding/components/AddPersonDialog/AddPersonDialog.tsx` | "Add New Person", field labels, "Add Person", "Cancel", validation messages |
 | `src/data/healthcare-provider-types.ts` | All category, subcategory, and care service names |

@@ -274,11 +274,7 @@ test.describe('Onboarding Wizard', () => {
       await inputByPlaceholder(page, 'County / State').fill('Greater Manchester')
       await inputByLabel(page, 'Postcode').fill('M3 2EG')
 
-      // Address country — first "Select a country" button in DOM (from AddressFields)
-      await page.getByRole('button', { name: 'Select a country' }).first().click()
-      await page.getByRole('option', { name: 'United Kingdom' }).click()
-
-      // Country of Operation — the remaining "Select a country" button
+      // Address country
       await page.getByRole('button', { name: 'Select a country' }).click()
       await page.getByRole('option', { name: 'United Kingdom' }).click()
 
@@ -306,7 +302,6 @@ test.describe('Onboarding Wizard', () => {
       expect(created).toBeDefined()
       expect(created.locationName).toBe('Manchester Care Home')
       expect(created.locationUrl).toBe('https://acme-healthcare.com/manchester')
-      expect(created.countryOfOperation).toBe('gb')
       expect(created.locale).toBe('GB')
       expect(created.isDeleted).toBe(false)
 
