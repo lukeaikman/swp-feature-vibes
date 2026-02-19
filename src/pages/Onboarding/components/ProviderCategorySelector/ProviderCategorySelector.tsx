@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Checkbox, Text, Column, Row } from '@UI'
 import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
   Chip,
+  Collapse,
 } from '@material-ui/core'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import { makeStyles, useTheme } from '@material-ui/core/styles'
@@ -14,29 +15,49 @@ import type { AppLocale, ICareServiceDefinition } from '../../../../entities/onb
 
 const useStyles = makeStyles((theme) => ({
   categoryCard: {
-    display: 'flex',
-    alignItems: 'center',
     cursor: 'pointer',
     borderRadius: theme.shape.borderRadius,
-    padding: theme.spacing(1.5, 2),
     border: `1px solid ${theme.palette.grey[300]}`,
     transition: 'all 0.2s ease',
+    overflow: 'hidden',
     '&:hover': {
       borderColor: theme.palette.brand.main,
       backgroundColor: `${theme.palette.brand.main}08`,
-    },
-    '& .MuiCheckbox-root': {
-      marginRight: theme.spacing(1),
-    },
-    '& .MuiFormControlLabel-root': {
-      pointerEvents: 'none',
     },
   },
   categoryCardSelected: {
     borderColor: theme.palette.brand.main,
     backgroundColor: `${theme.palette.brand.main}10`,
     '&:hover': {
-      backgroundColor: `${theme.palette.brand.main}18`,
+      backgroundColor: `${theme.palette.brand.main}12`,
+    },
+  },
+  categoryHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: theme.spacing(1.5, 2),
+    '& .MuiCheckbox-root': {
+      marginRight: theme.spacing(1),
+    },
+  },
+  chipRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: theme.spacing(0.5),
+    padding: theme.spacing(0, 2, 1.5, 2),
+  },
+  subcategoryPanel: {
+    padding: theme.spacing(0, 2, 2, 2),
+    borderTop: `1px solid ${theme.palette.brand.main}20`,
+  },
+  checkboxGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: theme.spacing(0.5, 2),
+  },
+  checkboxItem: {
+    '& .MuiCheckbox-root': {
+      marginRight: theme.spacing(1),
     },
   },
   accordion: {
@@ -65,25 +86,10 @@ const useStyles = makeStyles((theme) => ({
     color: '#fff',
     marginLeft: theme.spacing(1),
   },
-  subcategoryContainer: {
-    padding: theme.spacing(1, 0),
-    backgroundColor: `${theme.palette.brand.main}05`,
-    borderRadius: theme.shape.borderRadius,
-  },
   careServiceContainer: {
     padding: theme.spacing(1, 0),
     backgroundColor: `${theme.palette.info.main}05`,
     borderRadius: theme.shape.borderRadius,
-  },
-  checkboxGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: theme.spacing(0.5, 2),
-  },
-  checkboxItem: {
-    '& .MuiCheckbox-root': {
-      marginRight: theme.spacing(1),
-    },
   },
   summaryStrip: {
     padding: theme.spacing(1, 2),
@@ -122,6 +128,27 @@ export const ProviderCategorySelector = ({
   const theme = useTheme()
   const localeCode = mapLocaleToReferenceCode(locale)
 
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null)
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  const setCardRef = useCallback((id: string) => (el: HTMLDivElement | null) => {
+    cardRefs.current[id] = el
+  }, [])
+
+  useEffect(() => {
+    if (!expandedCategoryId) return
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const cardEl = cardRefs.current[expandedCategoryId]
+      if (cardEl && !cardEl.contains(e.target as Node)) {
+        setExpandedCategoryId(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [expandedCategoryId])
+
   const filteredCategories = useMemo(() => {
     return Object.values(HEALTHCARE_PROVIDER_TYPES).filter((cat) =>
       cat.locale.includes(localeCode)
@@ -148,6 +175,7 @@ export const ProviderCategorySelector = ({
         selectedSubcategoryIds,
         selectedCareServiceIds,
       })
+      setExpandedCategoryId(categoryId)
     } else {
       const category = HEALTHCARE_PROVIDER_TYPES[categoryId]
       const subcatIdsToRemove = category?.subcategories.map((s) => s.id) ?? []
@@ -158,6 +186,19 @@ export const ProviderCategorySelector = ({
         selectedSubcategoryIds: selectedSubcategoryIds.filter((id) => !subcatIdsToRemove.includes(id)),
         selectedCareServiceIds: selectedCareServiceIds.filter((id) => !serviceIdsToRemove.includes(id)),
       })
+      if (expandedCategoryId === categoryId) {
+        setExpandedCategoryId(null)
+      }
+    }
+  }
+
+  const handleCardClick = (categoryId: string) => {
+    const isSelected = selectedCategoryIds.includes(categoryId)
+
+    if (!isSelected) {
+      handleCategoryToggle(categoryId)
+    } else {
+      setExpandedCategoryId(expandedCategoryId === categoryId ? null : categoryId)
     }
   }
 
@@ -214,7 +255,7 @@ export const ProviderCategorySelector = ({
 
   return (
     <Column gap={3}>
-      {/* Section 1: Provider Categories */}
+      {/* Section 1: Provider Categories as inline-accordion cards */}
       <Column gap={1.5}>
         <Column gap={0.5}>
           <Text style={{ fontWeight: 600, fontSize: 16 }}>
@@ -228,17 +269,72 @@ export const ProviderCategorySelector = ({
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: theme.spacing(1.5) }}>
           {filteredCategories.map((category) => {
             const isSelected = selectedCategoryIds.includes(category.id)
+            const isExpanded = expandedCategoryId === category.id
+            const subcats = category.subcategories.filter((s) => s.locale.includes(localeCode))
+            const selectedSubs = subcats.filter((s) => selectedSubcategoryIds.includes(s.id))
+            const hasSubcategories = subcats.length > 0
+
             return (
               <div
                 key={category.id}
+                ref={setCardRef(category.id)}
                 className={`${classes.categoryCard} ${isSelected ? classes.categoryCardSelected : ''}`}
-                onClick={() => handleCategoryToggle(category.id)}
               >
-                <Checkbox
-                  checked={isSelected}
-                  onChange={() => {}}
-                  label={category.name}
-                />
+                <div
+                  className={classes.categoryHeader}
+                  onClick={() => handleCardClick(category.id)}
+                >
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={isSelected}
+                      onChange={() => handleCategoryToggle(category.id)}
+                    />
+                  </div>
+                  <Text style={{ fontWeight: 500, fontSize: 14 }}>{category.name}</Text>
+                </div>
+
+                {isSelected && !isExpanded && selectedSubs.length > 0 && (
+                  <div className={classes.chipRow}>
+                    {selectedSubs.map((sub) => (
+                      <Chip
+                        key={sub.id}
+                        label={sub.name}
+                        size="small"
+                        onDelete={() => handleSubcategoryToggle(sub.id, false)}
+                        style={{
+                          backgroundColor: `${theme.palette.brand.main}15`,
+                          borderColor: `${theme.palette.brand.main}40`,
+                          fontWeight: 500,
+                          fontSize: 11,
+                        }}
+                        variant="outlined"
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {isSelected && hasSubcategories && (
+                  <Collapse in={isExpanded}>
+                    <div className={classes.subcategoryPanel}>
+                      <Text style={{ fontSize: 12, fontWeight: 600, color: theme.palette.grey[500], marginBottom: theme.spacing(1) }}>
+                        Subcategories
+                      </Text>
+                      <div className={classes.checkboxGrid}>
+                        {subcats.map((sub) => (
+                          <div key={sub.id} className={classes.checkboxItem}>
+                            <Checkbox
+                              label={sub.name}
+                              checked={selectedSubcategoryIds.includes(sub.id)}
+                              onChange={(e) =>
+                                handleSubcategoryToggle(sub.id, (e.target as HTMLInputElement).checked)
+                              }
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </Collapse>
+                )}
               </div>
             )
           })}
@@ -263,83 +359,7 @@ export const ProviderCategorySelector = ({
         )}
       </Column>
 
-      {/* Section 2: Subcategories — per selected category, in accordions */}
-      {selectedCategoryIds.map((catId) => {
-        const category = HEALTHCARE_PROVIDER_TYPES[catId]
-        if (!category || category.subcategories.length === 0) return null
-
-        const subcats = category.subcategories.filter((s) => s.locale.includes(localeCode))
-        if (subcats.length === 0) return null
-
-        const selectedCount = subcats.filter((s) => selectedSubcategoryIds.includes(s.id)).length
-
-        return (
-          <Accordion key={catId} defaultExpanded className={classes.accordion}>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon />}
-              className={classes.accordionSummary}
-              style={{ backgroundColor: `${theme.palette.brand.main}06` }}
-            >
-              <Row gap={1} alignItems="center">
-                <Text style={{ fontWeight: 600, fontSize: 14 }}>
-                  Subcategories – {category.name}
-                </Text>
-                {selectedCount > 0 && (
-                  <span
-                    className={classes.badge}
-                    style={{ backgroundColor: theme.palette.brand.main }}
-                  >
-                    {selectedCount}
-                  </span>
-                )}
-              </Row>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Column gap={1} style={{ width: '100%' }}>
-                <div className={classes.subcategoryContainer}>
-                  <div className={classes.checkboxGrid} style={{ padding: theme.spacing(1, 2) }}>
-                    {subcats.map((sub) => (
-                      <div key={sub.id} className={classes.checkboxItem}>
-                        <Checkbox
-                          label={sub.name}
-                          checked={selectedSubcategoryIds.includes(sub.id)}
-                          onChange={(e) =>
-                            handleSubcategoryToggle(sub.id, (e.target as HTMLInputElement).checked)
-                          }
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {selectedCount > 0 && (
-                  <Row gap={1} style={{ flexWrap: 'wrap', paddingTop: theme.spacing(0.5) }}>
-                    {subcats
-                      .filter((s) => selectedSubcategoryIds.includes(s.id))
-                      .map((sub) => (
-                        <Chip
-                          key={sub.id}
-                          label={sub.name}
-                          size="small"
-                          onDelete={() => handleSubcategoryToggle(sub.id, false)}
-                          style={{
-                            backgroundColor: `${theme.palette.brand.main}15`,
-                            borderColor: `${theme.palette.brand.main}40`,
-                            fontWeight: 500,
-                            fontSize: 12,
-                          }}
-                          variant="outlined"
-                        />
-                      ))}
-                  </Row>
-                )}
-              </Column>
-            </AccordionDetails>
-          </Accordion>
-        )
-      })}
-
-      {/* Section 3: Care Services — accordion, only when services are available */}
+      {/* Section 2: Care Services — accordion, only when services are available */}
       {availableCareServices.length > 0 && (
         <Accordion defaultExpanded className={classes.accordion}>
           <AccordionSummary
