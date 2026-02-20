@@ -1,5 +1,26 @@
 # Onboarding Module Changelog
 
+## 2026-02-20 — Align IAddress with production (all fields required)
+
+### What was done
+- Removed optional markers (`?`) from `addressLine2`, `city`, `state` in `src/types/address.ts`. All 6 address fields are now required `string`, matching the production `IAddress` interface exactly.
+- Updated API-CONTRACT.md: Joi schema now uses `.allow('').required()` for `addressLine2`, `city`, `state` (was `.allow('').optional()`). Required/optional field docs updated for both client and location endpoints.
+
+### Decisions made
+- Production API stores all address fields as present strings — empty string `''`, not `undefined`. The Google Places controller defaults missing components to `''`. The existing report `eventAddressSchema` uses the same `.allow('')` pattern. We match this exactly.
+- `AddressFields` component still accepts `Partial<IAddress>` (for progressive form filling) but the final payload sent to the API will always have all 6 fields as strings because `createEmptyAddress()` already initialises them to `''`.
+
+---
+
+## 2026-02-19 — Remove hardcoded onboarding IDs
+
+### What was done
+- Removed hardcoded `_meta.created_by` and `_meta.updated_by` UUID literals from onboarding create payloads in `Onboarding.tsx`.
+- Removed the demo "Skip to Location Step" button that set hardcoded `org-001` and `person-001` IDs.
+
+### Decisions made
+- The sandbox flow no longer injects fixed identity values; integration should source audit user IDs from auth context or set audit fields server-side.
+
 ## 2026-02-19 — Care services card redesign
 
 ### What was done

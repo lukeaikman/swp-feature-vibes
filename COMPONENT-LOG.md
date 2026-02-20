@@ -7,6 +7,7 @@ These components are referenced directly from `safeworkplace-web-app/src/UI/` vi
 | Component | Where Used | Notes |
 |---|---|---|
 | `@UI/PageContainer` | `Onboarding.tsx` | Standard page wrapper with breadcrumbs |
+| `@UI/PageHeader` | `Dashboard.tsx` | Standard page title/header component for the dashboard |
 | `@UI/ContentBox` | `OrganisationStep`, `LocationCard`, feedback messages | Bordered content card for grouping |
 | `@UI/Input` | All form fields across all components | Text, email, tel, url types |
 | `@UI/Select` | `AddressFields` (country), `LocationCard` (key contact) | Used with flat items array |

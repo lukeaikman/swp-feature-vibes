@@ -1,10 +1,6 @@
 // Based on: safeworkplace-web-app/src/api/types/address.ts
-// Last synced: 2026-02-19
+// Last synced: 2026-02-20
 // Integration: verify these match production before merging
-//
-// Changes from production:
-//   addressLine2, city, state — made optional (// NEW) because the onboarding
-//   form does not require them.
 
 export interface IAddressPreview {
   description: string
@@ -13,9 +9,9 @@ export interface IAddressPreview {
 
 export interface IAddress {
   addressLine1: string
-  addressLine2?: string  // NEW — optional for onboarding (production has required)
-  city?: string          // NEW — optional for onboarding (production has required)
+  addressLine2: string
+  city: string
   country: string
-  state?: string         // NEW — optional for onboarding (production has required)
+  state: string
   zipCode: string
 }

@@ -14,8 +14,9 @@
 | `GET` | `/api/onboarding/locations` | `useGetLocations()` | List locations |
 | `POST` | `/api/onboarding/locations` | `useCreateLocation()` | Create location |
 | `PUT` | `/api/onboarding/locations/:id` | `useUpdateLocation()` | Update location |
+| `DELETE` | `/api/onboarding/locations/:id` | `useDeleteLocation()` | Delete location |
 
-**Hook count: 8. Endpoint count: 8.**
+**Hook count: 9. Endpoint count: 9.**
 
 ---
 
@@ -116,8 +117,8 @@
 }
 ```
 
-**Required fields:** `organisation_name`, `address`, `phone`, `primaryContactId`
-**Optional fields:** `organisationUrl`, `address.addressLine2`, `address.city`, `address.state`
+**Required fields:** `organisation_name`, `address` (all 6 fields: `addressLine1`, `addressLine2`, `city`, `state`, `zipCode`, `country` — empty string allowed for `addressLine2`, `city`, `state`), `phone`, `primaryContactId`
+**Optional fields:** `organisationUrl`
 
 **Response:** `201 Created`
 
@@ -358,7 +359,7 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 }
 ```
 
-**Required fields:** `organisationId`, `locationName`, `address` (with `addressLine1`, `zipCode`, and `country`), `selectedProviderCategoryIds` (non-empty)
+**Required fields:** `organisationId`, `locationName`, `address` (all 6 fields: `addressLine1`, `addressLine2`, `city`, `state`, `zipCode`, `country` — empty string allowed for `addressLine2`, `city`, `state`), `selectedProviderCategoryIds` (non-empty)
 **Optional fields:** `locationUrl`, `keyContactId`, `selectedProviderSubcategoryIds`, `careServiceIds`
 
 **Response:** `201 Created` — Returns the full object with server-generated fields.
@@ -402,6 +403,35 @@ Returns the full object with server-generated fields: `id`, `isDeleted: false`, 
 | `400` | Missing required fields |
 | `401` | Not authenticated |
 | `403` | Missing `update` permission |
+| `404` | Location not found |
+
+---
+
+### DELETE /api/onboarding/locations/:id — Delete Location
+
+| | |
+|---|---|
+| **React Query hook** | `useDeleteLocation()` in `src/entities/onboarding/api.ts` |
+| **Auth** | Authenticated, permission: `delete` on `Onboarding` |
+
+**Path Parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `id` | `string (UUID)` | Location ID |
+
+**Response:** `204 No Content`
+
+**Server-side behaviour:**
+- Production: soft-delete by setting `isDeleted: true` and updating `_meta.updated_at` and `_meta.updated_by`
+- Sandbox/json-server: hard-deletes the record
+
+**Error responses:**
+
+| Status | When |
+|---|---|
+| `401` | Not authenticated |
+| `403` | Missing `delete` permission |
 | `404` | Location not found |
 
 ---
@@ -459,9 +489,9 @@ Based on existing SWP conventions:
 ```javascript
 const addressSchema = Joi.object({
   addressLine1: Joi.string().required(),
-  addressLine2: Joi.string().allow('').optional(),
-  city: Joi.string().allow('').optional(),
-  state: Joi.string().allow('').optional(),
+  addressLine2: Joi.string().allow('').required(),
+  city: Joi.string().allow('').required(),
+  state: Joi.string().allow('').required(),
   zipCode: Joi.string().required(),
   country: Joi.string().required(),
 })

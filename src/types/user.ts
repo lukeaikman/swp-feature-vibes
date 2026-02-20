@@ -42,6 +42,7 @@ export interface IUser {
 
 // Hardcoded mock user — matches the admin seed user in db.json
 const MOCK_USER: IUser = {
+  // TODO(integration): Replace this hardcoded ID with the authenticated user ID from the real user/auth context (useMe from @entities/user API).
   id: '8f0f9397-089c-4e99-9dc6-96b5bb742504',
   email: 'lloyd+master@safework.place',
   firstName: 'lloyd',
