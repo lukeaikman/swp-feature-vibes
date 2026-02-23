@@ -10,13 +10,13 @@ Run through every item below. For each item, check the actual code and documents
 ## Documentation Checks
 
 1. `CHANGELOG.md` is up to date with all decisions, incomplete items, and integration notes
-2. `API-CONTRACT.md` documents every endpoint called by the code
+2. `API-CONTRACT.md` documents every endpoint called by the code, **including the response shape for each** (fields returned, status code). Multi-step flows explicitly document the response chain (which step's response feeds the next step's request).
 3. `API-CONTRACT.md` includes the Endpoint Summary table at the top
 4. `API-CONTRACT.md` includes DynamoDB key patterns section
 5. `API-CONTRACT.md` includes Custom Business Logic table
-6. `API-CONTRACT.md` includes suggested Joi validation schemas
+6. `API-CONTRACT.md` includes suggested Joi validation schemas. **For any field where frontend format differs from backend format** (e.g. bare domain vs full URI), the schema documents which side normalises.
 7. `API-CONTRACT.md` includes Smoke Test Scenarios
-8. Hook count in `src/entities/*/api.ts` matches endpoint count in `API-CONTRACT.md`
+8. Hook count in `src/entities/*/api.ts` matches endpoint count in `API-CONTRACT.md`. **For each hook, the request payload fields and response fields match the contract** (not just count — shapes must align).
 9. `COMPONENT-LOG.md` lists all `@UI` components used (scan imports in `src/pages/`)
 10. `COMPONENT-LOG.md` documents all new components created (scan `src/pages/*/components/`)
 11. `COMPONENT-LOG.md` lists all new dependencies added (diff `package.json` against template baseline)
@@ -35,10 +35,41 @@ Run through every item below. For each item, check the actual code and documents
 
 ## Functionality Checks
 
-21. Verify `npm run dev` would start cleanly (check for obvious issues: missing imports, syntax errors)
+21. Verify `npm run dev` would start cleanly (check for obvious issues: missing imports, syntax errors). **Verify `npm install && npm run dev` works from a fresh clone** (no undocumented prerequisites).
 22. All pages are registered in `src/app/routes.ts` and `src/app/router.tsx`
 23. All CRUD hooks have corresponding seed data in `db.json`
-24. Forms validate required fields
+24. Forms validate required fields. **All `form.Field` validators use `onChange` mode** (not `onSubmit`). Submit button calls `form.validateAllFields('change')` before `form.handleSubmit()`.
+
+## API Response Integrity Checks
+
+25. Every create endpoint in `API-CONTRACT.md` specifies that the response returns the full object including server-generated `id`
+26. Every update endpoint in `API-CONTRACT.md` specifies that the response returns the full updated object
+27. Multi-step flows (wizards) document their response chain in `API-CONTRACT.md` — which step's response provides the `id` consumed by the next step
+
+## Form Validation Checks
+
+28. `PhoneInput` validation accounts for dial-code-only values (strips non-digits, checks length >= 5 before treating as valid)
+29. URL fields either normalise user input (e.g. prepend `https://`) or document the expected format and which side normalises
+30. No duplicate labels on any form field (check `PhoneInput` which has a built-in label — wrapping in `InputLabel` produces duplicates)
+
+## Error Handling Checks
+
+31. Mutation catch blocks extract `err.response.data.message` rather than displaying generic "Please try again" messages
+32. Error states surface the API's error message to the user (verify catch blocks pass the extracted message to the UI, not a hardcoded string)
+
+## Schema Parity Checks
+
+33. `API-CONTRACT.md` includes a frontend/backend schema parity matrix for each form (table with: Field, Frontend Required?, Backend Required?, Frontend Type, Backend Type, Normalisation Rule)
+34. UI required fields and backend required fields are intentionally aligned — any mismatches are documented with rationale in the parity matrix
+
+## Environment and Handoff Hygiene Checks
+
+35. Required services are listed (DB, cache, queues, mock API) with startup instructions
+36. Seed/reset commands are documented and functional (`cp db.seed.json db.json` or equivalent)
+37. Feature can be exercised end-to-end from a clean state (fresh install, seed data, all CRUD paths)
+38. Commit messages describe intent and scope (no "works on my machine", "fix stuff", or "WIP" messages left in history)
+39. Environment/bootstrap fixes are in dedicated commits, separate from feature logic (enables safe revert)
+40. List endpoints follow a shared pagination response pattern (documented envelope shape in `API-CONTRACT.md`)
 
 ## Output Format
 
@@ -48,7 +79,7 @@ HANDOFF READINESS REPORT
 
 DOCUMENTATION
   [ ] 1. CHANGELOG.md up to date
-  [ ] 2. API-CONTRACT.md documents all endpoints
+  [ ] 2. API-CONTRACT.md documents all endpoints (incl. response shapes + chains)
   ...
 
 CODE QUALITY
@@ -57,10 +88,36 @@ CODE QUALITY
   ...
 
 FUNCTIONALITY
-  [ ] 21. No obvious startup issues
+  [ ] 21. Fresh clone bootstrap works
   ...
 
-RESULT: X/24 passed, Y failed
+API RESPONSE INTEGRITY
+  [ ] 25. Create returns full object with id
+  [ ] 26. Update returns full updated object
+  [ ] 27. Response chain documented
+
+FORM VALIDATION
+  [ ] 28. PhoneInput dial-code guard
+  [ ] 29. URL normalisation documented
+  [ ] 30. No duplicate labels
+
+ERROR HANDLING
+  [ ] 31. Catch blocks extract API message
+  [ ] 32. Error states surface API message
+
+SCHEMA PARITY
+  [ ] 33. Parity matrix in API-CONTRACT.md
+  [ ] 34. Required fields aligned
+
+ENVIRONMENT & HYGIENE
+  [ ] 35. Required services listed
+  [ ] 36. Seed/reset commands documented
+  [ ] 37. End-to-end from clean state
+  [ ] 38. Commit messages describe intent
+  [ ] 39. Env fixes in dedicated commits
+  [ ] 40. Pagination pattern consistent
+
+RESULT: X/40 passed, Y failed
 VERDICT: [READY FOR HANDOFF / NOT READY — fix items X, Y, Z]
 ```
 

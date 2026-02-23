@@ -102,6 +102,13 @@ grep -c '### ' [module]/API-CONTRACT.md
 
 These numbers should roughly match. If `api.ts` has 12 hooks but `API-CONTRACT.md` documents 8 endpoints, the contract is incomplete. Send it back.
 
+**Change classification:** Before starting, tag each integration change as one of:
+- **Additive** — new files, new routes, new DB entities (lowest risk)
+- **Backward-compatible modification** — changes to existing files that don't break current behaviour (medium risk)
+- **Breaking** — changes to shared types, existing API contracts, or DB schemas that affect other modules (highest risk — requires mitigation plan)
+
+If any change is tagged `breaking`, document the mitigation (e.g., migration script, feature flag, coordinated deploy) before proceeding.
+
 **Completeness check:**
 - [ ] `API-CONTRACT.md` has the Endpoint Summary table at the top
 - [ ] Every endpoint has full request/response examples with real data (not just types)
@@ -264,9 +271,17 @@ Add to `usePrimaryItems()` or `useSecondaryItems()`:
 
 In `safeworkplace-web-app/src/entities/security/helpers.ts`:
 
+The feature flag path depends on the production `IClient` type's config shape. Do NOT assume it's `client?.config?.features?.[module]` — check:
+
+1. Open `safeworkplace-web-app/src/entities/client/types.ts` and find the `IClient` interface
+2. Look at how `config.features` is structured — is it a flat map? Nested? Does it use a `FeatureFlags` sub-type?
+3. Check existing `has*` helpers in `security/helpers.ts` for the actual pattern (e.g., `hasRisks`, `hasTraining`)
+4. Mirror the same nesting depth and naming convention
+
 ```typescript
+// Example — adapt to match the actual IClient.config structure
 export const has[Module]: THasFn = (user, client) =>
-  client?.config?.features?.[module] === true
+  client?.config?.features?.[featureKey] === true
 ```
 
 The module's `API-CONTRACT.md` specifies what permission subjects and actions are needed. Seed them:
@@ -275,6 +290,16 @@ The module's `API-CONTRACT.md` specifies what permission subjects and actions ar
 - Actions: typically `'create'`, `'read'`, `'update'`, `'delete'`
 
 Add to `safeworkplace-api/database/seed/role/permission/` following the existing pattern.
+
+#### Feature Gating Parity Checklist
+
+All three of these must use the **same feature key** and be deployed together:
+
+- [ ] **Sidebar visibility gate:** `shouldShow: has[Module]` in sidebar constants
+- [ ] **Backend route feature gate:** middleware checks `client.config.features.[featureKey]` before allowing requests
+- [ ] **Backend permission checks:** role-based permission for the `[Module]` subject
+
+If the sidebar shows the feature but the backend rejects requests (or vice versa), the user sees a broken experience.
 
 ---
 
@@ -326,13 +351,14 @@ This is the largest step. Use `API-CONTRACT.md` as your primary specification an
 
 **For each entity in `db.json`:**
 
-1. **Create ElectroDB entity** in `safeworkplace-api/schema/entities/`:
+1. **Create dynamodb-toolbox model** in `safeworkplace-api/src/resources/[module]/[entity].model.js`:
    - Entity name and key patterns are specified in `API-CONTRACT.md` under "Suggested DynamoDB Key Patterns"
    - Field names and types come from the field-by-field specification in each endpoint
-   - Follow existing entity patterns (see `risk.ts`, `task.ts` for reference)
+   - Follow existing model patterns (see `safeworkplace-api/src/resources/risk/risk.model.js`, `task.model.js` for reference)
+   - Import `{ Model } from '../../database'` (NOT from a `schema/entities/` folder — that path does not exist)
 
 2. **Create resource folder** `safeworkplace-api/src/resources/[module]/`:
-   - `[entity].model.ts` — ElectroDB entity definition
+   - `[entity].model.js` — dynamodb-toolbox model definition
    - `[entity].router.ts` — Express routes matching each endpoint in `API-CONTRACT.md`
    - `[entity].controller.ts` — Request handlers following existing pattern. Pay special attention to the "Server-side behaviour" section of each endpoint.
    - `[entity].helper.ts` — Business logic, especially items listed in the "Custom Business Logic" table
@@ -354,6 +380,105 @@ This is the largest step. Use `API-CONTRACT.md` as your primary specification an
    ```
 
 5. **Implement custom business logic** from the "Custom Business Logic" table in `API-CONTRACT.md`. These are the operations that json-server couldn't handle — status transitions, computed fields, side effects (creating Tasks, sending notifications), etc.
+
+#### Return Value Patterns (dynamodb-toolbox)
+
+> **CRITICAL:** dynamodb-toolbox operations do NOT behave like json-server. json-server returns the full object on every operation. dynamodb-toolbox does not.
+
+| Operation | What It Returns | What You Must Do |
+|---|---|---|
+| `entity.put(values)` | `{}` (empty object) | Follow the put with `entity.get()` to return the created object, OR construct the response from input + generated fields |
+| `entity.update(values)` | `{}` by default | Pass `{ returnValues: 'all_new' }` to get the updated object back |
+| `entity.get({ pk, sk })` | `{ Item: { ... } }` | Destructure: `const { Item } = await entity.get(...)` |
+| `entity.delete({ pk, sk })` | `{}` | No action needed (204 No Content) |
+| `entity.query(...)` | `{ Items: [...] }` | Destructure: `const { Items } = await entity.query(...)` |
+
+```javascript
+// CREATE — put returns {}, so re-fetch or construct manually
+const item = { id: uuid(), ...values, ...meta }
+await Entity.put(item)
+// Option A: return the input (if you trust it)
+res.status(201).json(item)
+// Option B: re-fetch for safety
+const { Item } = await Entity.get({ pk: item.pk, sk: item.sk })
+res.status(201).json(Item)
+
+// UPDATE — always use returnValues
+const { Attributes } = await Entity.update(values, { returnValues: 'all_new' })
+res.json(Attributes)
+
+// GET — destructure Item
+const { Item } = await Entity.get({ pk, sk })
+if (!Item) return res.status(404).json({ message: 'Not found' })
+res.json(Item)
+```
+
+> **Warning: Model mutation.** Existing model helper functions may mutate their input object (e.g., `delete values.id` to strip the ID before writing). Always use the return value from the model function, or clone the input with `{ ...values }` before passing it. Do not rely on the input object being unchanged after a model call.
+
+#### Joi Validation: URL Fields
+
+`Joi.string().uri()` requires a full URI with scheme (`https://example.com`). If the frontend allows users to enter bare domains (`example.com`), the backend must normalise before validation:
+
+```javascript
+const normaliseUrl = (val) => {
+  if (val && !/^https?:\/\//i.test(val)) return `https://${val}`
+  return val
+}
+
+// In the Joi schema:
+organisationUrl: Joi.string().uri().allow('').custom(normaliseUrl),
+```
+
+Document in `API-CONTRACT.md` under "Server-side behaviour" which side normalises (frontend or backend) for each URL field.
+
+#### HTTP Status Code Convention
+
+Use one consistent convention across all endpoints in the module:
+
+| Operation | Status Code |
+|---|---|
+| Successful read | `200 OK` |
+| Successful create | `201 Created` |
+| Successful update | `200 OK` |
+| Successful delete | `204 No Content` |
+| Validation error | `400 Bad Request` |
+| Not found | `404 Not Found` |
+
+Verify the module's `API-CONTRACT.md` specifies the same status codes you're implementing. Inconsistency between contract and implementation is a common integration failure.
+
+#### List Response Contract
+
+Use the shared pagination pattern rather than inventing a new envelope. List responses must follow this shape:
+
+```json
+{
+  "items": [...],
+  "meta": { "page": 1, "limit": 20, "total": 42 }
+}
+```
+
+Check if the main app has existing pagination helpers (e.g., `buildPaginatedResponse`, `TokenPaginationResponse`). Use them. Do not build ad-hoc pagination logic per module.
+
+#### Contract Verification
+
+Before marking the API complete, verify each endpoint against `API-CONTRACT.md`:
+
+- [ ] **Create** returns the full object including server-generated `id`
+- [ ] **Update** returns the full updated object (or documented no-body contract)
+- [ ] **List** returns the standard envelope shape with documented `meta` fields
+- [ ] **Validation errors** return a consistent body shape with `message` (and optionally `details`)
+- [ ] **Status codes** match what the contract specifies
+
+#### Observability
+
+Backend controllers should include structured error logging. At minimum, each error log should include:
+
+- Endpoint and HTTP method
+- Actor/user ID (from auth token)
+- Target entity ID (if applicable)
+- Correlation/request ID (if the middleware provides one)
+
+This is not optional instrumentation — it's the minimum needed to debug integration issues in staging and production.
 
 ---
 
@@ -442,3 +567,37 @@ File uploads were mocked in the isolated module (fake metadata only). The real A
 ### "Success/error toasts don't appear"
 
 The module used inline feedback messages (no Recoil snackbar). Convert to `snackbarAtom` during cleanup (Step 14) if you want toast notifications.
+
+### "I need to see what's in local DynamoDB"
+
+Use this Node one-liner to scan a local DynamoDB table:
+
+```bash
+# List all tables
+aws dynamodb list-tables --endpoint-url http://localhost:8000
+
+# Scan a table (replace TABLE_NAME)
+aws dynamodb scan --table-name TABLE_NAME --endpoint-url http://localhost:8000
+
+# Filter by PK prefix (e.g., all onboarding clients)
+aws dynamodb scan --table-name TABLE_NAME --endpoint-url http://localhost:8000 \
+  --filter-expression "begins_with(pk, :prefix)" \
+  --expression-attribute-values '{":prefix": {"S": "CLIENT#"}}'
+```
+
+Or from Node directly:
+
+```javascript
+const { DynamoDBClient, ScanCommand } = require('@aws-sdk/client-dynamodb')
+const client = new DynamoDBClient({ endpoint: 'http://localhost:8000', region: 'local' })
+const result = await client.send(new ScanCommand({ TableName: 'TABLE_NAME' }))
+console.log(JSON.stringify(result.Items, null, 2))
+```
+
+### "Pre-commit hook blocks my commit"
+
+`lint-staged` runs on ALL staged files, not just the ones you changed. When committing a large batch of files, pre-existing lint errors in untouched code can block the commit.
+
+**Quick fix:** `git commit --no-verify` to bypass hooks for this commit. But flag the underlying lint issues — they should be fixed in a separate commit.
+
+**Better fix:** Fix the lint errors first in a dedicated commit, then commit your feature changes cleanly.

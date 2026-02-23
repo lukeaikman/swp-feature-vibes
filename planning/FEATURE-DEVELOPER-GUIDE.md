@@ -47,7 +47,7 @@ These are the real production components from `safeworkplace-web-app/src/UI/`, a
 | `Checkbox` | Checkbox with label. |
 | `Switch` | Toggle switch. |
 | `RadioInput` | Radio button group. |
-| `PhoneInput` | Phone number input with country code. |
+| `PhoneInput` | Phone number input with country code. **Gotcha:** fires `onChange` on mount with the dial code only (e.g. `+1`). Has a **built-in label** — do NOT wrap in `InputLabel` or you get a duplicate. Validate by stripping non-digits and requiring length >= 5 to reject dial-code-only values. |
 | `FilesInput` | File upload with preview. |
 | `SearchInput` | Search text input with magnifying glass icon. |
 | `InputLabel` | Standalone label (used internally by Input, also available directly). |
@@ -319,7 +319,8 @@ Returns the full object with server-generated fields added:
 - Full request body with example values (not just types — real example data)
 - Full response body with example values
 - Field-by-field specification: type, whether server-generated or client-supplied, description
-- Server-side behaviour: what the backend must do beyond storing data
+- **Explicit success status code** — `200 OK` for reads/updates, `201 Created` for creates, `204 No Content` for deletes. Pick one convention and stick to it across all endpoints. Inconsistency here (e.g. some creates return 200, others 201) causes integration bugs.
+- Server-side behaviour: what the backend must do beyond storing data. If the frontend allows a format that differs from backend validation (e.g. bare domain `example.com` vs `Joi.string().uri()` requiring `https://example.com`), **document which side normalises and how**
 - Error responses: which HTTP status codes and when
 - Business logic notes: anything json-server couldn't replicate
 
@@ -369,6 +370,25 @@ When verifying the real API works with the frontend:
 5. **Edit works:** Change a field, save. Verify the change persists.
 6. **Delete works:** Delete an item. Verify it disappears from the list.
 7. [Add module-specific scenarios here]
+
+## Schema Parity Matrix
+
+For each form that submits data, include a table mapping frontend fields to backend fields. This catches requiredness/type drift before integration.
+
+| Field | Frontend Required? | Backend Required? | Frontend Type | Backend Type | Normalisation Rule | Notes |
+|---|---|---|---|---|---|---|
+| `title` | Yes | Yes | `string` | `Joi.string().required()` | None | — |
+| `organisationUrl` | No | No | `string` | `Joi.string().uri().allow('')` | Frontend allows bare domains; backend prepends `https://` if no scheme | Document in Server-side behaviour |
+| (add all submitted fields) | | | | | | |
+
+## Integration Invariants
+
+These rules must hold for every endpoint. If any is violated, document why in the endpoint's notes.
+
+1. Every **create** response provides a stable identifier (`id`)
+2. Every **mutation** response shape is deterministic and documented (no optional fields that appear sometimes)
+3. **List** endpoints follow one shared envelope convention (`{ items, meta }`)
+4. UI required fields and backend required fields are intentionally aligned (any mismatch documented with rationale)
 ```
 
 ---
@@ -418,7 +438,9 @@ For each new component, document:
 
 | Component | Issue | Workaround |
 |---|---|---|
-| (document any problems or unexpected behaviour) | | |
+| `PhoneInput` | Fires `onChange` on mount with dial code only (e.g. `+1`), which can mark a pristine form as dirty | Strip non-digit characters and check `length >= 5` before treating value as a real phone number. Do NOT use the raw `onChange` value to determine form completeness. |
+| `PhoneInput` | Has a built-in label (`Phone` by default). Wrapping in `InputLabel` produces a duplicate label. | Omit `InputLabel`. Use the component's own `label` prop if you need to customise the text. |
+| (document any additional problems or unexpected behaviour) | | |
 
 ## User-Facing Strings (for i18n)
 
@@ -605,15 +627,17 @@ const handleSubmit = async (values: Partial<IAuditTemplate>) => {
   try {
     await createMutation.mutateAsync(values)
     navigate(ROUTES.TEMPLATES)
-  } catch (err) {
-    // Show inline error — don't use window.alert
-    setSubmitError('Failed to create template. Please try again.')
+  } catch (err: any) {
+    const apiMessage = err?.response?.data?.message
+    setSubmitError(apiMessage || 'Failed to create template. Please try again.')
   }
 }
 
 // In JSX:
 {submitError && <ErrorCaption>{submitError}</ErrorCaption>}
 ```
+
+> **Important:** Always extract the API's error message via `err?.response?.data?.message`. Generic messages like "Please try again" hide actionable Joi validation details that help the user fix their input. The backend returns structured error messages for a reason — surface them.
 
 ### Toast / Snackbar Notifications
 
@@ -947,6 +971,7 @@ export interface IAuditAssignee {
 - **Never import from `../../shims/`** inside `entities/` or `pages/`. Shims are only used by `src/app/` and `src/App.tsx`.
 - **Keep page-internal imports relative** (`./components/MyComponent`). These don't need rewriting.
 - **Use exactly two levels of `../../`** from pages to entities/types/routes. Don't nest pages deeper.
+- **Always `import React from 'react'`** at the top of `.tsx` files, even though React 17+ doesn't require it. The production codebase uses this convention throughout. Matching it in the template avoids unnecessary diff noise during integration.
 
 ---
 
@@ -1088,6 +1113,24 @@ This avoids the need for cross-route state. The main app uses Recoil atoms for t
   Integration team may want to convert to Recoil for consistency.
 ```
 
+### Response Chaining in Multi-Step Flows
+
+When a wizard creates entities across multiple steps (e.g., Step 1 creates an organisation, Step 2 creates a location linked to that organisation), each step's API response **MUST return the entity's `id`** so the next step can reference it.
+
+```typescript
+// Step 1 creates the org and captures the server-generated ID
+const orgResponse = await createOrg.mutateAsync(orgValues)
+const orgId = orgResponse.id  // REQUIRED — next step needs this
+
+// Step 2 uses orgId to link the location
+await createLocation.mutateAsync({ ...locationValues, organisationId: orgId })
+```
+
+**Rules:**
+- Never assume the client can predict the server-generated `id` — always read it from the create response
+- Document the response chain explicitly in `API-CONTRACT.md`: which step produces the `id` that the next step consumes
+- If `json-server` returns the `id` automatically (it does), verify the production API does the same — `dynamodb-toolbox` `put()` does NOT return the created object by default (see LEAD-INTEGRATION-GUIDE.md)
+
 ---
 
 ## How to Handle Forms
@@ -1127,6 +1170,58 @@ const MyForm = () => {
     </form>
   )
 }
+```
+
+### Always Use onChange Validators (NOT onSubmit)
+
+> **CRITICAL:** TanStack Form has a subtle bug where `onSubmit` validators silently clear themselves when the user edits a field after a failed submission. The error disappears but the field is still invalid. The user sees no feedback and submits bad data.
+
+**Rules:**
+1. **All `form.Field` validators must use `onChange`**, not `onSubmit`
+2. **The submit button must call `form.validateAllFields('change')` before `form.handleSubmit()`** to force all fields to re-validate on click
+3. **Never use both `onChange` and `onSubmit` with identical logic** — this produces duplicate error messages
+
+```typescript
+// CORRECT — onChange validator + explicit validateAllFields before submit
+<form.Field
+  name="title"
+  validators={{
+    onChange: ({ value }) => (!value ? 'Title is required' : undefined),
+  }}
+  children={(field) => (
+    <Input
+      label="Title"
+      value={field.state.value}
+      onChange={(e) => field.handleChange(e.target.value)}
+      errors={field.state.meta.errors}
+      required
+    />
+  )}
+/>
+
+<Button
+  onClick={async () => {
+    await form.validateAllFields('change')
+    if (form.state.isValid) {
+      form.handleSubmit()
+    }
+  }}
+>
+  Create
+</Button>
+```
+
+```typescript
+// WRONG — onSubmit validator (errors silently disappear after editing)
+validators={{
+  onSubmit: ({ value }) => (!value ? 'Title is required' : undefined),
+}}
+
+// WRONG — both onChange AND onSubmit with same logic (duplicate errors)
+validators={{
+  onChange: ({ value }) => (!value ? 'Required' : undefined),
+  onSubmit: ({ value }) => (!value ? 'Required' : undefined),
+}}
 ```
 
 ---
@@ -1260,6 +1355,9 @@ Before marking your module as complete:
 - [ ] No hardcoded IDs that would conflict with production data
 - [ ] No `console.log` statements left in code
 - [ ] Each page has a loading state, error state, and empty state
+- [ ] Commit messages describe intent and scope (no "works on my machine" or "fix stuff" messages)
+- [ ] Environment/bootstrap fixes are in dedicated commits, separate from feature logic
+- [ ] Migration or data-shape changes are in their own commits (enables safe revert/cherry-pick without unwinding feature code)
 
 ### Functionality
 - [ ] `npm run dev` starts cleanly on a fresh clone (test it)
